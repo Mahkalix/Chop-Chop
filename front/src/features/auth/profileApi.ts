@@ -16,12 +16,12 @@ function profileUrl() {
   }
 }
 
-export async function requestProfile(token: string, signal: AbortSignal, pseudo?: string): Promise<Profile | null> {
+export async function requestProfile(token: string, signal: AbortSignal, pseudo?: string, writeMethod: 'PUT' | 'PATCH' = 'PUT'): Promise<Profile | null> {
   let response: Response;
   const url = profileUrl();
   try {
     response = await fetch(url, {
-      method: pseudo === undefined ? 'GET' : 'PUT', signal,
+      method: pseudo === undefined ? 'GET' : writeMethod, signal,
       headers: {
         Authorization: `Bearer ${token}`,
         ...(pseudo === undefined ? {} : { 'Content-Type': 'application/json' }),

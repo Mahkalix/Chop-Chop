@@ -9,13 +9,33 @@ vi.mock('../src/features/auth/profileApi', () => ({ requestProfile: mocks.profil
 beforeEach(() => { mocks.profile.mockReset(); vi.stubEnv('MODE', 'test'); sessionStorage.clear(); });
 afterEach(() => { cleanup(); vi.unstubAllEnvs(); });
 
-it('locks the saved profile name instead of offering an ineffective rename', async () => {
+it('saves a new pseudo with PATCH and uses the profile returned by the API', async () => {
   sessionStorage.setItem('pseudo', 'Draft');
-  mocks.profile.mockResolvedValue({ id: 'user', pseudo: 'SavedChef' });
+  mocks.profile.mockResolvedValueOnce({ id: 'user', pseudo: 'SavedChef' })
+    .mockResolvedValueOnce({ id: 'user', pseudo: 'NewChef' });
   render(<HomePseudo />);
   await screen.findByDisplayValue('SavedChef');
   expect((screen.getByRole('textbox') as HTMLInputElement).readOnly).toBe(true);
   expect(sessionStorage.getItem('pseudo')).toBe('SavedChef');
+  fireEvent.click(screen.getByRole('button', { name: 'Modifier le pseudo' }));
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: ' NewChef ' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+  await screen.findByText('Pseudo mis à jour.');
+  expect(mocks.profile).toHaveBeenLastCalledWith('token-1', expect.any(AbortSignal), 'NewChef', 'PATCH');
+  expect(sessionStorage.getItem('pseudo')).toBe('NewChef');
+});
+
+it('preserves the saved pseudo when the API rejects a rename', async () => {
+  mocks.profile.mockResolvedValueOnce({ id: 'user', pseudo: 'SavedChef' })
+    .mockRejectedValueOnce(new Error('Ce pseudo est déjà pris.'));
+  render(<HomePseudo />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Modifier le pseudo' }));
+  fireEvent.change(screen.getByRole('textbox'), { target: { value: 'Taken' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+  await screen.findByText('Ce pseudo est déjà pris.');
+  expect(sessionStorage.getItem('pseudo')).toBe('SavedChef');
+  fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+  expect(screen.getByDisplayValue('SavedChef')).toBeTruthy();
 });
 it('allows a draft only after confirming the player has no profile', async () => {
   let resolve!: (value: null) => void;
