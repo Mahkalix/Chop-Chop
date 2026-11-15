@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { plateLayout } from './plateLayout';
 
 import { stationsForLevel, closestStation, type KitchenStation } from './stations';
 import { advanceExtinction, igniteFires } from './fire';
@@ -8,9 +9,9 @@ import { advancePreparation, getPreparationProgress, type PreparationProgress } 
 import { advanceService, createService, deliver, penalizeBurns, type Service } from './service';
 import { getServiceRules, EXTINGUISH_MS, type ServiceLevel } from '@chopchop/shared';
 
-const textureOf = (item: Item) => item.kind === 'plate' && item.contents.length
-  ? (item.contents.length === 5 ? 'item-wrap' : `dish-${item.contents.map(value => value.kind).sort().join('-')}`)
-  : 'item-' + (item.kind === 'tomato' ? (item.state === 'chopped' ? 'chopped' : 'whole') : item.kind === 'meat' && item.state !== 'raw' ? item.state : item.kind);
+const textureOf = (item: Item) => item.kind === 'plate'
+  ? (item.contents.length === 5 ? 'item-wrap' : item.contents.length ? `dish-${item.contents.map(value => value.kind).sort().join('-')}` : 'dish-empty')
+  : 'item-' + (item.kind === 'tomato' ? (item.state === 'chopped' ? 'chopped' : 'whole') : item.kind === 'lettuce' && item.state === 'chopped' ? 'lettuce-chopped' : item.kind === 'meat' && item.state !== 'raw' ? item.state : item.kind);
 
 export type InteractionStatus = { carried: string | null; target: string | null; message: string; preparation: PreparationProgress | null; fireCount: number };
 
@@ -18,7 +19,7 @@ const chefs = ['Miso', 'Pipa', 'Basile', 'Alba', 'Nori', 'Gaspard'];
 
 export class KitchenScene extends Phaser.Scene {
   readonly levelId: ServiceLevel;
-  private readonly stations: readonly KitchenStation[];
+  private stations: readonly KitchenStation[];
   service: Service;
 
   constructor(levelId: ServiceLevel = 1) {
@@ -52,6 +53,7 @@ export class KitchenScene extends Phaser.Scene {
   private feedback = '';
   private lastStatus = '';
   private lastProgressAt = 0;
+  private progressLabels = new Map<string, Phaser.GameObjects.Text>();
   private progressBars!: Phaser.GameObjects.Graphics;
   private burningFlames!: Phaser.GameObjects.Graphics;
   private choppingCloud!: Phaser.GameObjects.Graphics;
@@ -69,13 +71,15 @@ export class KitchenScene extends Phaser.Scene {
   private letters!: Record<'Z' | 'Q' | 'S' | 'D', Phaser.Input.Keyboard.Key>;
 
   preload() {
+    this.load.on('progress', (value: number) => this.game.events.emit('kitchen-loading', value));
     this.load.image('floor', '/kitchen/floor.png');
     for (const key of new Set(this.stations.map(station => station.texture))) {
       this.load.image(key, `/kitchen/${key}.png`);
     }
-    for (const name of ['whole', 'chopped', 'meat', 'cooked', 'burnt', 'plate', 'lettuce', 'extinguisher', 'tortilla', 'white-sauce', 'wrap']) {
+    for (const name of ['whole', 'chopped', 'meat', 'cooked', 'burnt', 'plate', 'extinguisher']) {
       this.load.svg('item-' + name, '/kitchen/items/' + name + '.svg');
     }
+    for (const name of ['lettuce', 'lettuce-chopped', 'tortilla', 'white-sauce', 'wrap']) this.load.image('item-' + name, '/kitchen/items/' + name + '.png');
     this.load.svg('pan', '/kitchen/items/pan.svg');
     this.load.svg('knife', '/kitchen/items/knife.svg');
     const selected = sessionStorage.getItem('chef') ?? 'Miso';
@@ -83,17 +87,18 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   create() {
-    const ingredients = this.levelId === 3 ? ['tomato', 'meat', 'lettuce', 'tortilla', 'white-sauce'] : ['tomato', 'meat', 'lettuce'];
-    for (let mask = 1; mask < (1 << ingredients.length); mask++) {
+    const ingredients = this.levelId === 3 ? ['lettuce', 'tortilla', 'white-sauce', 'tomato', 'meat'] as const : ['lettuce', 'tomato', 'meat'] as const;
+    for (let mask = 0; mask < (1 << ingredients.length); mask++) {
       const kinds = ingredients.filter((_, index) => mask & (1 << index));
       const texture = this.add.renderTexture(0, 0, 128, 96).setVisible(false);
       texture.draw(this.add.image(0, 0, 'item-plate').setDisplaySize(112, 80).setVisible(false), 64, 48);
       kinds.forEach((kind, index) => {
-        const key = kind === 'tomato' ? 'chopped' : kind === 'meat' ? 'cooked' : kind;
-        const image = this.add.image(0, 0, 'item-' + key).setDisplaySize(kinds.length > 3 ? 32 : 48, kinds.length > 3 ? 26 : 36).setVisible(false);
-        texture.draw(image, 40 + index * 12, 40 + (index % 2) * 10);
+        const key = kind === 'tomato' ? 'chopped' : kind === 'meat' ? 'cooked' : kind === 'lettuce' ? 'lettuce-chopped' : kind;
+        const { x, y, width, height } = plateLayout(kinds)[index]!;
+        const image = this.add.image(0, 0, 'item-' + key).setDisplaySize(width, height).setVisible(false);
+        texture.draw(image, x, y);
       });
-      texture.saveTexture('dish-' + kinds.sort().join('-'));
+      texture.saveTexture(kinds.length ? 'dish-' + [...kinds].sort().join('-') : 'dish-empty');
     }
     this.inventory = createInventory(this.levelId);
     this.lastStatus = '';
@@ -102,18 +107,19 @@ export class KitchenScene extends Phaser.Scene {
     this.facing.set(0, 1);
     this.targetId = null;
     this.stationSprites.clear();
-    this.add.image(0, 0, 'floor').setOrigin(0);
+    const floor = this.add.tileSprite(720, 450, 1440, 900, 'floor').setDepth(-10);
     const obstacles = this.physics.add.staticGroup();
+    let deliveryLabel: Phaser.GameObjects.Text | undefined;
     for (const { id, texture, label, x, y } of this.stations) {
       const sprite = obstacles.create(x + 72, y + 72, texture).setDisplaySize(144, 144).refreshBody();
       this.stationSprites.set(id, sprite);
-      if (['lettuce', 'tortilla', 'white-sauce'].includes(id)) this.add.image(x + 72, y + 68, 'item-' + id);
       if (id === 'grill') this.add.image(x + 72, y + 68, 'pan').setOrigin(42 / 112, 46 / 80);
       if (label) {
-        this.add.text(x + 72, y + 148, label, {
-          fontFamily: 'Arial', fontSize: '18px', fontStyle: 'bold', color: '#000000',
+        const stationLabel = this.add.text(x + 72, y + 148, label, {
+          fontFamily: 'Inter, Arial', fontSize: label.length > 12 ? '15px' : '18px', fontStyle: 'bold', color: '#000000',
           backgroundColor: '#f7f1e6', fixedWidth: 144, align: 'center', padding: { y: 3 },
         }).setOrigin(0.5, 0);
+        if (id === 'delivery') deliveryLabel = stationLabel;
       }
     }
     this.player = this.physics.add.sprite(456, 554, 'chef').setDisplaySize(128, 160);
@@ -128,8 +134,17 @@ export class KitchenScene extends Phaser.Scene {
     this.portrait = this.add.image(this.player.x, this.player.y, 'chef').setDisplaySize(128, 160).setDepth(20);
     const camera = this.cameras.main;
     const fitCamera = () => {
-      camera.setZoom(Math.min(this.scale.width / 1440, this.scale.height / 900));
-      camera.centerOn(720, 450);
+      const zoom = Math.min(this.scale.width / 1440, this.scale.height / 900);
+      const worldWidth = this.scale.width / zoom, worldHeight = this.scale.height / zoom;
+      camera.setZoom(zoom).centerOn(720, 450);
+      floor.setSize(worldWidth + 4, worldHeight + 4);
+      const deliveryX = 720 + worldWidth / 2 - 144;
+      this.stations = this.stations.map(station => station.id === 'delivery' ? { ...station, x: deliveryX } : station);
+      const deliverySprite = this.stationSprites.get('delivery');
+      deliverySprite?.setX(deliveryX + 72);
+      (deliverySprite?.body as Phaser.Physics.Arcade.StaticBody | undefined)?.updateFromGameObject();
+      deliveryLabel?.setX(deliveryX + 72);
+      this.physics.world.setBounds(720 - worldWidth / 2 + 40, 110, worldWidth - 80, 720);
     };
     fitCamera();
     this.scale.on(Phaser.Scale.Events.RESIZE, fitCamera);
@@ -189,8 +204,7 @@ export class KitchenScene extends Phaser.Scene {
     if ((target?.id ?? null) !== this.targetId) {
       this.stationSprites.get(this.targetId ?? '')?.clearTint();
       this.targetId = target?.id ?? null;
-      this.stationSprites.get(this.targetId ?? '')?.setTint(0xffe293);
-      this.publishStatus(target, target ? 'E : prendre, poser ou utiliser ce poste.' : 'Approche-toi d’un poste pour interagir.');
+      this.publishStatus(target, '');
     }
     this.updatePreparation(target, time, activeDelta);
     if (time - this.lastServiceAt >= 100) {
@@ -213,7 +227,7 @@ export class KitchenScene extends Phaser.Scene {
     this.choppingCloud.clear();
     this.restKnife();
     const tomato = target && this.inventory.surfaces[target.id];
-    if (target?.id === 'chopping' && tomato?.kind === 'tomato' && tomato.state === 'raw'
+    if (target?.id === 'chopping' && (tomato?.kind === 'tomato' || tomato?.kind === 'lettuce') && tomato.state === 'raw'
       && this.cutKey.isDown && !this.inventory.carried) {
       this.animateChop(target.x + 72, target.y + 68, tomato.cutMs / 270);
     }
@@ -230,14 +244,22 @@ export class KitchenScene extends Phaser.Scene {
 
   private drawProgress() {
     this.progressBars.clear();
+    for (const label of this.progressLabels.values()) label.setVisible(false);
     for (const station of this.stations) {
       const progress = station.id in this.inventory.fires
         ? { percent: this.inventory.fires[station.id]! / EXTINGUISH_MS * 100 }
         : getPreparationProgress(this.inventory.surfaces[station.id], station);
       if (!progress) continue;
-      const x = station.x + 36, y = station.y + 100;
-      this.progressBars.fillStyle(0x39312b).fillRoundedRect(x, y, 72, 10, 3)
-        .fillStyle(0xffcf68).fillRect(x + 2, y + 2, 68 * progress.percent / 100, 6);
+      const x = station.x - 48, y = station.y - 60;
+      this.progressBars.fillStyle(0xf7f1e6).fillRect(x, y, 240, 56).lineStyle(2, 0x000000).strokeRect(x, y, 240, 56)
+        .fillStyle(0xe8dbc4).fillRect(x + 18, y + 34, 204, 8).fillStyle(0x922f1f).fillRect(x + 18, y + 34, 204 * progress.percent / 100, 8);
+      let label = this.progressLabels.get(station.id);
+      if (!label) {
+        label = this.add.text(x + 16, y + 10, '', { fontFamily: 'Inter, Arial', fontSize: '14px', fontStyle: 'bold', color: '#000000' }).setDepth(17);
+        this.progressLabels.set(station.id, label);
+      }
+      const name = station.id in this.inventory.fires ? 'EXTINCTION' : station.kind === 'surface' && station.preparation === 'chop' ? 'C MAINTENUE' : 'CUISSON';
+      label.setText(name + ' · ' + Math.round(progress.percent) + '%').setVisible(true);
     }
   }
 
@@ -343,11 +365,13 @@ export class KitchenScene extends Phaser.Scene {
       const item = this.inventory.surfaces[station.id];
       const sprite = this.placedItems.get(station.id);
       if (item && sprite) sprite.setTexture(textureOf(item)).setVisible(true);
-      else if (item) this.placedItems.set(station.id, this.add.image(station.x + 72, station.y + 68, textureOf(item)).setScale(.85).setDepth(10));
+      else if (item) this.placedItems.set(station.id, this.add.image(station.x + 72, station.y + 68, textureOf(item)).setDepth(10));
+      if (item?.kind === 'plate' && item.contents.length !== 5) this.placedItems.get(station.id)?.setDisplaySize(112, 84);
+      else if (item) this.placedItems.get(station.id)?.setScale(['lettuce', 'tortilla', 'white-sauce'].includes(item.kind) || (item.kind === 'plate' && item.contents.length === 5) ? .6 : .85);
       else sprite?.setVisible(false);
     }
     const held = this.inventory.carried;
     this.carriedItem.setVisible(Boolean(held));
-    if (held) this.carriedItem.setTexture(textureOf(held));
+    if (held) this.carriedItem.setTexture(textureOf(held)).setScale(['lettuce', 'tortilla', 'white-sauce'].includes(held.kind) || (held.kind === 'plate' && held.contents.length === 5) ? .5 : .72);
   }
 }

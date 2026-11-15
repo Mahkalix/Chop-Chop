@@ -96,3 +96,27 @@
 /* Menus live in the fixed 1440 × 900 stage; longer level rules must remain scrollable. */
 .page { height: 900px; overflow-y: auto; }
 .page[data-screen='regles'] > * { flex-shrink: 0; }
+
+.page[data-screen='regles'] {
+  overflow: hidden;
+  padding: 24px 40px;
+  gap: 14px;
+  > p { font-size: 19px; line-height: 26px; }
+  > h2 { font-size: 24px; line-height: 30px; }
+  .row:nth-of-type(1) { min-height: 136px; padding: 10px 16px; }
+  .row:nth-of-type(1) section { gap: 8px; font-size: 14px; }
+  kbd { width: 38px; height: 38px; font-size: 18px; }
+  .keys { grid-template-columns: repeat(3,38px); }
+  .row:nth-of-type(2) section { min-height: 172px; padding: 14px; }
+  .row:nth-of-type(2) h3 { font-size: 20px; line-height: 24px; }
+  .row:nth-of-type(2) p { font-size: 17px; line-height: 23px; margin-top: 10px; }
+  .row:nth-of-type(3) { grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; min-height: 208px; padding: 14px 16px; }
+  .row:nth-of-type(3) h3 { font-size: 21px; line-height: 26px; }
+  .back { margin-top: auto; flex-shrink: 0; }
+}
+.visualRecipes { display: flex; justify-content: space-around; align-items: start; gap: 8px; }
+.visualRecipe { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+.visualRecipe strong { font: 600 14px/18px Inter, sans-serif; min-height: 36px; display: flex; align-items: center; }
+.recipeIngredients { display: flex; justify-content: center; flex-wrap: wrap; gap: 2px; }
+.recipeIngredients img { width: 26px; height: 26px; object-fit: contain; image-rendering: pixelated; }
+.reminders p { font: 15px/21px Inter, sans-serif; margin: 8px 0; }

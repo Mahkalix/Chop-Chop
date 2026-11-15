@@ -1,40 +1,114 @@
-.kitchen { position: fixed; inset: 0; width: 100%; height: 100dvh; overflow: hidden; font-family: Inter, sans-serif; }
+.kitchen { position: fixed; inset: 0; width: 100%; height: 100dvh; overflow: hidden; font-family: Inter, Arial, sans-serif; color: #000; background: #e4d5bb; --paper: #f7f1e6; --red: #922f1f; }
 .canvas { position: absolute; inset: 0; }
 .canvas canvas { display: block; }
-.exit, .fullscreen, .hint { position: absolute; background: #f7f1e6; color: black; font-weight: 600; }
-.exit, .fullscreen { top: 12px; padding: 8px 10px; border: 2px solid black; font: inherit; font-size: clamp(11px, 1.2vw, 16px); font-weight: 600; }
-.exit { right: 12px; }
-.fullscreen { left: 12px; cursor: pointer; }
-.inventory { position: absolute; top: 64px; left: 12px; width: min(520px, calc(100% - 24px)); padding: 10px 14px; background: #f7f1e6; border: 2px solid #922f1f; font-size: clamp(12px, 1.3vw, 18px); line-height: 1.35; }
-.inventory p { margin: 6px 0 0; }
-.hint { bottom: 12px; left: 50%; transform: translateX(-50%); margin: 0; padding: 10px 16px; width: max-content; max-width: 95%; text-align: center; font-size: clamp(11px, 1.3vw, 16px); }
-
-.preparation { margin-top: 10px; font-size: .9em; }
-.preparation [role='progressbar'] { height: 8px; margin-top: 6px; background: #39312b; }
-.preparation [role='progressbar'] span { display: block; height: 100%; background: #b45215; }
-
-.hud { position: absolute; inset: 12px 12px auto; display: flex; justify-content: space-between; gap: 16px; pointer-events: none; color: #1f1814; }
-.orders { display: flex; gap: 10px; align-items: flex-start; }
-.order { width: clamp(150px, 17vw, 230px); padding: 10px; background: #f7f1e6; border: 2px solid #1f1814; box-shadow: 3px 3px #1f1814; display: grid; gap: 6px; font-size: 13px; }
-.order span { display: flex; align-items: center; gap: 8px; }
-.order img { width: 40px; height: 34px; object-fit: contain; image-rendering: pixelated; }
-.order progress { width: 100%; height: 12px; accent-color: #92331f; }
-.order[data-urgent='true'] { border-color: #92331f; border-width: 3px; }
-.score { pointer-events: auto; min-width: 200px; display: grid; gap: 6px; padding: 10px 16px; background: #1f1814; color: #f7f1e6; }
-.score time { font-size: 28px; font-variant-numeric: tabular-nums; }
-.score button, .dialog button, .dialog a { min-height: 44px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; border: 2px solid #1f1814; background: #92331f; color: #fff; }
-.dialog { width: min(620px, calc(100% - 48px)); max-height: 90dvh; overflow: auto; padding: 32px; border: 3px solid #1f1814; background: #f7f1e6; color: #1f1814; box-shadow: 8px 8px #1f1814; font-family: Inter, sans-serif; line-height: 1.6; }
-.dialog::backdrop { background: #1f1814; }
-.dialog h1, .brand { font-family: 'Press Start 2P', monospace; line-height: 1.6; }
-.dialog h1 { font-size: 22px; }
-.brand { font-size: 12px; }
-.dialog a, .dialog button { display: inline-block; margin: 6px 8px 6px 0; text-decoration: none; }
+.hud { position: absolute; inset: 16px 16px auto; display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: start; pointer-events: none; }
+.orders { display: flex; gap: 11px; align-items: start; min-width: 0; }
+.order { width: 154px; height: 164px; padding: 9px 10px 5px; background: var(--paper); border: 2px solid #000; display: flex; flex-direction: column; flex-shrink: 0; }
+.order[data-urgent='true'] { border-color: var(--red); box-shadow: inset 0 0 0 1px var(--red); }
+.orderTitle { display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+.orderTitle span { font-size: 13px; font-weight: 600; }
+.orderTitle strong { font-size: 16px; font-weight: 600; }
+.dish { position: relative; display: grid; place-items: center; height: 62px; width: 80px; margin: 2px auto; flex-shrink: 0; }
+.dish > img { max-width: 72px; max-height: 60px; image-rendering: pixelated; }
+.garnish { position: absolute; inset: 0; }
+.garnish img { position: absolute; object-fit: contain; transform: translate(-50%, -50%); image-rendering: pixelated; }
+.ingredients { height: 32px; display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 13px; }
+.ingredients img { width: 23px; height: 25px; object-fit: contain; image-rendering: pixelated; }
+.ingredients span { margin-left: 6px; }
+.remaining { margin-top: auto; display: flex; align-items: baseline; justify-content: space-between; font-size: 11px; }
+.remaining strong { font-size: 16px; }
+.order[data-urgent='true'] .remaining span { color: var(--red); font-weight: 600; }
+.order progress { display: block; width: 100%; height: 6px; border: 0; margin-top: 3px; appearance: none; background: #e8dbc4; }
+.order progress::-webkit-progress-bar { background: #e8dbc4; }
+.order progress::-webkit-progress-value { background: var(--red); }
+.order progress::-moz-progress-bar { background: var(--red); }
+.level { margin: 0; background: var(--paper); padding: 7px 24px; min-width: 190px; text-align: center; font-size: 18px; font-weight: 600; }
+.score { justify-self: end; width: clamp(260px, 24vw, 340px); display: grid; gap: 10px; pointer-events: auto; }
+.clock, .points { display: flex; justify-content: space-between; align-items: center; padding: 7px 18px; }
+.clock { background: #000; color: var(--paper); min-height: 68px; font-size: 18px; font-weight: 600; }
+.clock time { font-family: 'Pixelify Sans', monospace; font-size: 42px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.points { background: var(--paper); min-height: 54px; gap: 12px; }
+.points strong { font: 700 28px 'Pixelify Sans', monospace; }
+.points span { font-size: 20px; font-weight: 600; white-space: nowrap; }
+.pause, .recipesButton { cursor: pointer; border: 0; min-height: 44px; background: var(--paper); color: #000; font: 600 18px Inter, Arial, sans-serif; }
+.pause { justify-self: end; padding: 8px 16px; }
+.waiting { background: var(--paper); padding: 12px; margin: 0; }
+.controls { position: absolute; inset: auto 16px 16px; display: grid; grid-template-columns: minmax(200px, 266px) minmax(160px, 230px); justify-content: space-between; gap: 30px; align-items: end; }
+.held { background: var(--paper); padding: 10px 14px; min-height: 44px; font-size: 16px; text-align: center; }
+.feedback { position: absolute; bottom: 76px; left: 16px; max-width: min(420px, calc(100% - 32px)); padding: 8px 12px; background: var(--paper); font-size: 13px; line-height: 1.4; pointer-events: none; }
+.feedback p { margin: 0; }
+.feedback [role='alert'] { color: var(--red); font-weight: 700; }
+.preparation { margin-top: 6px; }
+.preparation [role='progressbar'] { height: 6px; margin-top: 4px; background: #e8dbc4; }
+.preparation [role='progressbar'] span { display: block; height: 100%; background: var(--red); }
+.fullscreen { position: absolute; bottom: 12px; right: 12px; padding: 8px 10px; border: 2px solid #000; background: var(--paper); min-height: 44px; cursor: pointer; font: 600 14px Inter, sans-serif; }
+.dialog { width: min(620px, calc(100% - 48px)); max-height: 90dvh; overflow: auto; padding: 32px; border: 3px solid #1f1814; background: var(--paper); color: #1f1814; box-shadow: 8px 8px #1f1814; font: 16px/1.6 Inter, sans-serif; }
+.dialog::backdrop { background: rgb(0 0 0 / 65%); }
+.dialog h1, .brand { font-family: 'Pixelify Sans', monospace; line-height: 1.4; }
+.dialog h1 { font-size: 30px; }
+.brand { font-size: 16px; }
+.dialog button, .dialog a { display: inline-block; margin: 6px 8px 6px 0; min-height: 44px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; border: 2px solid #1f1814; background: var(--red); color: #fff; text-decoration: none; }
 .dialog button:disabled { opacity: .6; cursor: wait; }
-.dialog :focus-visible, .score :focus-visible { outline: 3px solid #1f1814; outline-offset: 4px; }
+.kitchen button:focus-visible, .kitchen a:focus-visible, .kitchen summary:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
 .dialog kbd { display: inline-block; border: 1px solid #1f1814; border-bottom-width: 3px; padding: 2px 6px; margin: 4px; }
 .total { font-size: 28px; font-weight: 800; }
-.inventory { top: 180px; left: auto; right: 12px; width: min(260px, calc(100% - 24px)); font-size: 13px; pointer-events: none; }
-.fullscreen { left: auto; right: 12px; top: auto; bottom: 64px; }
-@media (max-width: 760px) { .hud { gap: 8px; } .orders { gap: 4px; } .order { width: 120px; font-size: 11px; padding: 6px; } .score { min-width: 130px; padding: 6px; font-size: 12px; } .order span { display: none; } }
-.order span { gap: 4px; flex-wrap: wrap; }
-.order img { width: 32px; height: 28px; }
+.recipeList { padding: 0; list-style: none; }
+.recipeList li { display: flex; gap: 16px; align-items: center; border-bottom: 1px solid #d0bfa5; padding: 8px 0; }
+.recipeList p { margin: 0; font-size: 14px; }
+.recipeList .dish { margin: 0; }
+@media (max-width: 1100px) {
+  .hud { gap: 12px; grid-template-columns: 1fr auto; }
+  .level { position: absolute; top: 180px; left: 0; font-size: 14px; min-width: 0; padding: 6px 12px; }
+  .score { width: 240px; }
+  .clock time { font-size: 36px; }
+  .controls { gap: 12px; grid-template-columns: 200px 160px; }
+}
+@media (max-width: 760px) {
+  .hud { inset: 8px 8px auto; gap: 8px; }
+  .orders { gap: 4px; }
+  .order { width: 112px; padding: 6px; height: 150px; }
+  .orderTitle strong { font-size: 12px; }
+  .ingredients img { width: 17px; }
+  .score { width: 164px; gap: 6px; }
+  .clock, .points { padding: 4px 8px; min-height: 44px; }
+  .clock { font-size: 12px; }
+  .clock time { font-size: 28px; }
+  .points strong { font-size: 22px; }
+  .points span { font-size: 12px; }
+  .controls { inset: auto 8px 8px; grid-template-columns: 1fr 120px; gap: 8px; }
+  .held, .recipesButton { font-size: 13px; }
+}
+
+.dialog:focus { outline: none; }
+.pauseDialog { width: min(560px, calc(100% - 40px)); padding: 30px; border: 3px solid #000; box-shadow: 5px 5px #000; font-size: 15px; line-height: 1.4; }
+.pauseDialog h1 { margin: 12px 0 18px; font-size: 30px; line-height: 1; }
+.eyebrow { color: var(--red); font-size: 11px; font-weight: 700; margin: 0; }
+.dialogActions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+.dialogActions button { margin: 0; flex: 1 1 auto; font-size: 13px; }
+.dialog .secondaryButton { background: transparent; color: #000; }
+.pauseHelp { margin-top: 20px; }
+.pauseHelp summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; gap: 10px; }
+.pauseHelp summary::before { content: '+'; }
+.pauseHelp[open] summary::before { content: '−'; }
+
+.controls .recipesButton { grid-column: 2; }
+
+.intro { position: absolute; inset: 0; display: grid; place-items: center; background: var(--paper); color: #000; text-align: center; padding: 24px; z-index: 30; }
+.introContent { max-width: 520px; }
+.intro h1 { font: 700 42px/1.15 'Pixelify Sans', monospace; margin: 0 0 24px; }
+.intro p { font-size: 15px; line-height: 1.5; margin: 10px 0; }
+.introChef { width: 96px; height: 120px; object-fit: contain; image-rendering: pixelated; margin-bottom: 12px; }
+.loadingTrack { width: min(480px, 80vw); height: 12px; margin: 24px auto; background: #000; overflow: hidden; }
+.loadingTrack span { display: block; height: 100%; background: var(--red); transition: width 600ms linear; }
+.intro[data-step='loading'] h1 { margin-bottom: 40px; }
+.intro[data-step='loading'] .introChef { width: 112px; height: 160px; margin-bottom: 12px; }
+.intro[data-step='loading'] .introCaption { margin: 0 0 16px; }
+@media (prefers-reduced-motion: reduce) { .loadingTrack span { transition: none; } }
+.intro .introCaption { font-size: 12px; }
+.intro a, .intro button { display: inline-block; padding: 12px 18px; margin: 12px 4px 0; border: 1px solid currentColor; color: inherit; background: transparent; font: 600 12px Inter, sans-serif; text-decoration: none; cursor: pointer; }
+.introGo { background: var(--red); color: var(--paper); }
+.introClock { display: block; margin-top: 20px; font: 700 34px 'Pixelify Sans', monospace; }
+
+.countdownDialog { text-align: center; padding: 36px; }
+.countdownDialog h1 { font-size: clamp(96px, 16vw, 160px); line-height: 1; margin: 12px 0 24px; font-variant-numeric: tabular-nums; }
+.countdownDialog p { margin: 0; }

@@ -23,7 +23,7 @@ describe("item kinds and ingredient states", () => {
     expect(INGREDIENT_STATES).toEqual({
       tomato: ["raw", "chopped"],
       meat: ["raw", "cooked", "burnt"],
-      lettuce: ["ready"],
+      lettuce: ["raw", "chopped"],
       tortilla: ["ready"],
       "white-sauce": ["ready"],
     });

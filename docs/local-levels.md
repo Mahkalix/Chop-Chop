@@ -22,10 +22,10 @@ Pour utiliser les vrais services : configurer `front/.env` à partir de `front/.
 | Niveau | Recettes | Ajouts |
 | --- | --- | --- |
 | 1 | Tomate préparée, viande grillée | Découpe, cuisson, assiette, service |
-| 2 | Les précédentes + salade tomate, assiette complète | Salade prête, assemblages, feu, extincteur |
+| 2 | Les précédentes + salade tomate, assiette complète | Salade à découper (3 s), assemblages, feu, extincteur |
 | 3 | Les précédentes + wrap | Galette prête et sauce blanche, comptoirs dédiés |
 
-Wrap : une assiette, une galette, de la salade, une tomate découpée, une viande cuite et de la sauce blanche. Aucun chauffage supplémentaire. Poser l’assiette sur ASSEMBLER ou un plan de travail, puis ajouter les ingrédients un par un avec E, dans n’importe quel ordre. Ingrédients supplémentaires, crus ou brûlés refusés.
+Wrap : une assiette, une galette, de la salade découpée, une tomate découpée, une viande cuite et de la sauce blanche. Aucun chauffage supplémentaire. Poser l’assiette sur ASSEMBLER ou un plan de travail, puis ajouter les ingrédients un par un avec E, dans n’importe quel ordre. Ingrédients supplémentaires, crus ou brûlés refusés.
 
 Commandes : ZQSD ou flèches pour bouger, E pour prendre/poser/servir, C maintenue 3 s pour découper (mains libres), Espace pour bondir, Échap pour pause. Aux niveaux 2/3, porter l’extincteur et maintenir C près du grill en feu pendant 3 s. Reposer l’extincteur, puis jeter la viande brûlée pour réutiliser le grill.
 
@@ -57,3 +57,25 @@ Limites : sauvegarde réelle Supabase/PostgreSQL à vérifier avec les services 
 - Placement et distance des comptoirs, temps d’assemblage face aux délais de commande.
 - Clarté du feu, de l’extinction, du nettoyage et du contenu porté.
 - Rythme des trois niveaux, score et seuils d’étoiles avant la PR.
+
+## Ajustement visuel après essai (15 novembre 2026)
+
+Référence vérifiée : Figma CHOP-CHOP, écran « 06 — Service en cours », nœud `15:1346`, cuisine `15:1350`.
+
+- Sol étendu à toute la fenêtre sans bandes unies sur les côtés et sans déformer les personnages/comptoirs ; caméra redimensionnée avec la fenêtre.
+- HUD repris de la maquette : commandes verticales illustrées, niveau centré, temps en Pixelify Sans dans un bandeau noir, score/combo séparés, pause et pied de page avec objet porté et Recettes.
+- Recettes ouvre un panneau qui suspend le service ; reprise avec le décompte existant. Vérifié pour les catalogues de 2, 4 et 5 recettes, puis retour à la pause normale avec Échap.
+- Salade/galette/sauce dans la rangée basse, service orienté et ancré au bord droit, sans cadre rouge d’interaction, avec progression au-dessus des postes. Comptoir libre conservé pour les préparations intermédiaires.
+- PNG exportés directement des composants Figma : comptoirs `356:1743`, `356:1763`, `356:1802` ; ingrédients `344:3999`, `344:4029`, `353:1377` ; plats `350:9502`, `350:9547`, `344:4045`. Sources dans `front/public/kitchen/` et `items/`.
+- Vérifications : 216 tests réussis, typecheck et compilation réussis. Canvas exactement à la taille de la fenêtre en 1440 × 900 (niveau 1), 1366 × 768 (niveau 2), 1913 × 907 (niveau 3), aucun débordement horizontal ni erreur JavaScript. Chrono inchangé lors de la consultation des recettes. Wrap préparé et livré au clavier dans la nouvelle disposition (+149 points).
+
+- Deux postes ASSEMBLER indépendants sur chaque niveau. Assiettes vides et garnies à taille uniforme ; composition commune entre les recettes et la cuisine, avec salade visible en fond. Commandes accessibles dans Pause.
+
+## Vérification avant PR (15 novembre 2026)
+
+- `pnpm typecheck`, `pnpm test` (220 tests) et `pnpm build:front` réussis.
+- Poubelle au centre de la rangée basse, deux postes d’assemblage, passage central élargi.
+- Accueil avec trois boutons de niveau ; règles illustrées tenant dans le cadre 1440 × 900 sans défilement.
+- Lancement automatique : mise en place avec progression réelle, prêt, partez ; chrono démarré ensuite. Pause et abandon sur la cuisine assombrie.
+- Parcours navigateur récents : lancement, salade découpée puis assemblages à deux et trois ingrédients, consultation des recettes, reprise et abandon.
+- Équilibrage encore à valider : délais de commandes et seuils d’étoiles provisoires. La proposition de découpe à 2 s n’est pas appliquée (3 s actuellement).

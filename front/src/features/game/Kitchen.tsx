@@ -15,8 +15,13 @@ export default function Kitchen() {
   const session = useServiceSession(levelId);
   const actions = useRef(session);
   actions.current = session;
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [ready, setReady] = useState(false);
-  const [status, setStatus] = useState<InteractionStatus>({ carried: null, target: null, message: 'Approche-toi d’un poste puis appuie sur E.', preparation: null, fireCount: 0 });
+  const [showRecipes, setShowRecipes] = useState(false);
+  const pause = () => { setShowRecipes(false); session.pause(); };
+  const recipes = () => { setShowRecipes(true); session.pause(); };
+  useEffect(() => { if (session.phase === 'running') setShowRecipes(false); }, [session.phase]);
+  const [status, setStatus] = useState<InteractionStatus>({ carried: null, target: null, message: '', preparation: null, fireCount: 0 });
   useEffect(() => {
     let game: Phaser.Game | undefined;
     // The portal owns the full screen; underlying auth controls must not receive focus.
@@ -34,6 +39,7 @@ export default function Kitchen() {
         physics: { default: 'arcade', arcade: { debug: false } },
         scene: new KitchenScene(levelId),
       });
+      game.events.on('kitchen-loading', setLoadingProgress);
       game.events.on('kitchen-interaction', setStatus);
       game.events.on('kitchen-ready', (scene: KitchenScene) => { actions.current.scene.current = scene; setReady(true); });
       game.events.on('service-update', (service: Service) => actions.current.setService(service));
@@ -41,25 +47,25 @@ export default function Kitchen() {
     });
     return () => {
       cancelAnimationFrame(frame);
+      game?.events.off('kitchen-loading', setLoadingProgress);
       game?.events.off('kitchen-interaction', setStatus);
       game?.destroy(true);
       if (root) root.inert = wasInert;
     };
   }, [levelId]);
+  const feedbackMessage = /récupérée\.|posée\.|^Objet jeté\.|^Approche-toi/.test(status.message) ? '' : status.message;
   return createPortal(<main className={styles.kitchen} aria-label={`Cuisine du niveau ${levelId}`}>
-    <div className={styles.canvas} ref={mount} style={{ visibility: session.phase === 'running' ? 'visible' : 'hidden' }} />
-    {session.phase === 'running' && <ServiceHud service={session.service} onPause={session.pause} />}
-    <ServiceOverlay session={session} ready={ready} />
-    {document.fullscreenEnabled && <button className={styles.fullscreen} onClick={event => {
+    <div className={styles.canvas} ref={mount}  />
+    {['running', 'paused', 'countdown'].includes(session.phase) && <ServiceHud service={session.service} onPause={pause} />}
+    <ServiceOverlay session={session} ready={ready} loadingProgress={loadingProgress} showRecipes={showRecipes} />
+    {document.fullscreenEnabled && session.phase !== 'running' && <button className={styles.fullscreen} onClick={event => {
       const frame = event.currentTarget.closest('main');
       if (document.fullscreenElement) void document.exitFullscreen();
       else if (frame) void frame.requestFullscreen().catch(() => {});
     }}>PLEIN ÉCRAN</button>}
-    <section className={styles.inventory} aria-label="Objet porté" hidden={session.phase !== 'running'}>
+    <section className={styles.feedback} aria-label="Objet porté" hidden={session.phase !== 'running' || (!feedbackMessage && !status.preparation && !status.fireCount)}>
       {status.fireCount > 0 && <p role="alert">FEU AU GRILL ! Prends l’extincteur et maintiens C près du feu pendant 3 s.</p>}
-      <strong>EN MAIN : {status.carried ?? 'Rien'}</strong>
-      <p>{status.target ? `POSTE : ${status.target}` : 'Approche-toi d’un poste.'}</p>
-      <p role="status">{status.message}</p>
+      <p role="status">{feedbackMessage}</p>
       {status.preparation && <div className={styles.preparation}>
         <span>{status.preparation.label} · {status.preparation.percent}%</span>
         <div role="progressbar" aria-label={status.preparation.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={status.preparation.percent}>
@@ -67,6 +73,9 @@ export default function Kitchen() {
         </div>
       </div>}
     </section>
-    <p className={styles.hint}>ZQSD ou flèches : BOUGER · ESPACE : BONDIR · E : PRENDRE / POSER · C maintenue : DÉCOUPER{levelId >= 2 ? ' / ÉTEINDRE' : ''}</p>
+    {['running', 'paused', 'countdown'].includes(session.phase) && <footer className={styles.controls}>
+      {status.carried && <strong className={styles.held}>EN MAIN : {status.carried}</strong>}
+      <button className={styles.recipesButton} onClick={recipes}>RECETTES</button>
+    </footer>}
   </main>, document.body);
 }

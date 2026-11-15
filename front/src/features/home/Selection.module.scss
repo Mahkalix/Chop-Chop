@@ -38,4 +38,13 @@
   .actions a:first-child { width:100%; }
 
 
-.level select { min-height: 44px; max-width: 100%; padding: 8px; border: 2px solid #1f1814; background: #f7f1e6; color: #1f1814; font: inherit; }
+
+
+.levelPicker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+.levelPicker button { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px; border: 2px solid #1f1814; background: transparent; color: #1f1814; cursor: pointer; text-align: left; }
+.levelPicker button span { font: 700 26px 'Pixelify Sans', monospace; }
+.levelPicker button strong { font: 600 12px/1.25 Inter, sans-serif; }
+.levelPicker button[aria-pressed='true'] { color: #f7f1e6; background: var(--red); box-shadow: 3px 3px #1f1814; }
+.levelPicker button:hover:not([aria-pressed='true']) { background: #e8dcc6; }
+.levelPicker button:focus-visible { outline: 3px solid #1f1814; outline-offset: 3px; }
+.level .map { height: 300px; }

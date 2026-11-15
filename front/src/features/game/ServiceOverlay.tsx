@@ -1,11 +1,14 @@
+import { ServiceIntro } from './ServiceIntro';
 import { isLocalDemo } from './localDemo';
 import { useEffect, useRef } from 'react';
 import { getServiceRules, RECIPES } from '@chopchop/shared';
 import type { useServiceSession } from './useServiceSession';
+import { DishArt } from './DishArt';
+import { ingredientNames } from './recipePresentation';
 import styles from './Kitchen.module.scss';
 
 type Session = ReturnType<typeof useServiceSession>;
-export function ServiceOverlay({ session, ready }: { session: Session; ready: boolean }) {
+export function ServiceOverlay({ session, ready, loadingProgress = 0, showRecipes = false }: { session: Session; ready: boolean; loadingProgress?: number; showRecipes?: boolean }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const { phase, service, confirmQuit, saving, saved, result } = session;
   useEffect(() => {
@@ -14,29 +17,28 @@ export function ServiceOverlay({ session, ready }: { session: Session; ready: bo
   }, [phase]);
   const rules = getServiceRules(service.levelId);
   const stars = rules.stars.filter(value => service.score >= value).length;
-  return <dialog ref={dialog} className={styles.dialog} onCancel={event => event.preventDefault()} aria-labelledby="service-title">
-    <p className={styles.brand}>CHOP CHOP · NIVEAU {service.levelId}{isLocalDemo() ? " · ESSAI LOCAL" : ""}</p>
+  if (phase === 'ready' || phase === 'starting') return <ServiceIntro ready={ready} progress={loadingProgress} level={service.levelId} error={session.error} start={session.start} />;
+  return <dialog ref={dialog} className={`${styles.dialog} ${phase === 'paused' ? styles.pauseDialog : phase === 'countdown' ? styles.countdownDialog : ''}`} tabIndex={-1} onCancel={event => event.preventDefault()} aria-labelledby="service-title">
+    {phase !== 'countdown' && <p className={phase === 'paused' ? styles.eyebrow : styles.brand}>{phase === 'paused' ? 'PARTIE EN PAUSE' : <>CHOP CHOP · NIVEAU {service.levelId}{isLocalDemo() ? " · ESSAI LOCAL" : ""}</>}</p>}
     <h1 id="service-title">{phase === 'ended' ? 'TEMPS ÉCOULÉ !' : phase === 'countdown' ? String(session.countdown)
-      : phase === 'paused' ? (confirmQuit ? 'QUITTER LE SERVICE ?' : 'PAUSE') : 'PRÊT POUR LE SERVICE ?'}</h1>
-    {(phase === 'ready' || phase === 'starting') && <>
-      <p>3 minutes. Recettes : {rules.recipes.map(id => RECIPES.find(recipe => recipe.id === id)!.name.toLowerCase()).join(', ')}.</p>
-      <p>Découpe la tomate (C, 3 s) ou cuis la viande (8 s). Pose une assiette sur ASSEMBLER, ajoute l’ingrédient prêt avec E, puis reprends l’assiette et sers-la.</p>
-      {service.levelId >= 2 && <p>La salade est prête à l’emploi. Assemble les ingrédients dans n’importe quel ordre. Si le grill prend feu, prends l’extincteur et maintiens C près du feu pendant 3 s, puis jette la viande brûlée.</p>}
-      {service.levelId === 3 && <p>Wrap : pose une assiette, puis ajoute galette, salade, tomate découpée, viande cuite et sauce blanche. La galette et la sauce sont prêtes à l’emploi ; le wrap ne se cuit pas.</p>}
-      <p>Étoiles : {rules.stars.map(value => value.toLocaleString('fr-FR')).join(' · ')} points.</p>
-      <button disabled={!ready || phase === 'starting'} onClick={() => void session.start()}>{phase === 'starting' ? 'OUVERTURE DU SERVICE…' : ready ? 'COMMENCER' : 'CHARGEMENT DE LA CUISINE…'}</button>
-      <a href="#accueil">RETOUR À L’ACCUEIL</a>
-    </>}
+      : phase === 'paused' ? (confirmQuit ? <>QUITTER LA<br />CUISINE ?</> : showRecipes ? 'RECETTES' : 'PAUSE') : 'PRÊT POUR LE SERVICE ?'}</h1>
     {phase === 'paused' && (confirmQuit ? <>
-      <p>Cette partie sera abandonnée. Aucun score ne sera enregistré dans le classement.</p>
-      <button disabled={saving} onClick={() => void session.quit()}>{saving ? 'ABANDON EN COURS…' : 'CONFIRMER L’ABANDON'}</button>
-      <button disabled={saving} onClick={() => session.setConfirmQuit(false)}>ANNULER</button>
+      <p>Cette partie sera perdue.<br />Ton score ne sera pas enregistré au classement.</p>
+      <div className={styles.dialogActions}><button disabled={saving} onClick={session.resume}>REPRENDRE</button>
+      <button className={styles.secondaryButton} disabled={saving} onClick={() => void session.quit()}>{saving ? 'ABANDON EN COURS…' : 'QUITTER SANS ENREGISTRER'}</button></div>
     </> : <>
-      <p>Le chrono, les commandes et les cuissons sont arrêtés.</p>
+      {showRecipes && <ul className={styles.recipeList}>{rules.recipes.map(id => {
+        const recipe = RECIPES.find(value => value.id === id)!;
+        return <li key={id}><DishArt recipeId={id} /><div><strong>{recipe.name}</strong><p>Assiette + {recipe.ingredients.map(ingredient => ingredientNames[ingredient.kind].toLowerCase()).join(' + ')}</p></div></li>;
+      })}</ul>}
+      <p>Le service est en pause. Prends ton temps.</p>
+      <details className={styles.pauseHelp}><summary>COMMANDES ET RÈGLES</summary>
       {service.levelId >= 2 && <p>Le feu et l’extinction sont également arrêtés. Pour éteindre : porter l’extincteur et maintenir C près du poste en feu (3 s).</p>}
-      <p><kbd>ZQSD / flèches</kbd> Déplacer · <kbd>Espace</kbd> Bondir<br /><kbd>E</kbd> Prendre / poser / servir · <kbd>C maintenue</kbd> Découper</p>
-      <button onClick={session.resume}>REPRENDRE</button>
-      <button onClick={() => session.setConfirmQuit(true)}>ABANDONNER</button>
+      <p><kbd>ZQSD / flèches</kbd> Déplacer · <kbd>Espace</kbd> Bondir<br /><kbd>E</kbd> Prendre / poser / servir · <kbd>C maintenue</kbd> Découper (3 s, mains libres)</p>
+      <p>Pose une assiette sur l’un des deux postes ASSEMBLER, puis ajoute les ingrédients préparés avec E. Reprends l’assiette et apporte-la à SERVIR.</p>
+      </details>
+      <div className={styles.dialogActions}><button onClick={session.resume}>REPRENDRE</button>
+      <button className={styles.secondaryButton} onClick={() => session.setConfirmQuit(true)}>ABANDONNER</button></div>
     </>)}
     {phase === 'countdown' && <p>Prépare-toi… Le chrono reprendra après le décompte.</p>}
     {phase === 'ended' && <>

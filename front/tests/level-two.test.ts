@@ -11,10 +11,10 @@ const use = (inventory: Inventory, id: string) => interact(inventory, station(id
 function addIngredient(inventory: Inventory, kind: Ingredient['kind']) {
   const source = kind === 'tomato' ? 'tomatoes' : kind;
   inventory = use(inventory, source);
-  if (kind !== 'lettuce') {
-    const target = kind === 'tomato' ? 'chopping' : 'grill';
+  if (kind === 'tomato' || kind === 'lettuce' || kind === 'meat') {
+    const target = kind === 'meat' ? 'grill' : 'chopping';
     inventory = use(inventory, target);
-    inventory = advancePreparation(inventory, kind === 'tomato' ? 3000 : 8000, target).inventory;
+    inventory = advancePreparation(inventory, kind === 'meat' ? 8000 : 3000, target).inventory;
     inventory = use(inventory, target);
   }
   return use(inventory, 'assembly');
@@ -42,7 +42,7 @@ it.each([['lettuce', 'tomato'], ['tomato', 'lettuce']] as Ingredient['kind'][][]
 it('rejects partial plates, duplicates, raw and burnt ingredients without consuming them', () => {
   let inventory = use(plate(['lettuce']), 'assembly');
   for (const carried of [
-    { id: 100, kind: 'lettuce', state: 'ready' },
+    { id: 100, kind: 'lettuce', state: 'chopped', cutMs: 3000 },
     { id: 100, kind: 'tomato', state: 'raw', cutMs: 0 },
     { id: 100, kind: 'meat', state: 'burnt', cookMs: 14000 },
   ] as const) {
@@ -113,3 +113,39 @@ it('keeps level one free of fire and rejects level-two assemblies there', () => 
   expect(deliver(createService(1), plate(['lettuce', 'tomato'])).service.delivered).toBe(0);
 });
 
+
+
+it('cuts lettuce only with free hands for three accumulated seconds, then allows assembly', () => {
+  let inventory = use(use(createInventory(2), 'plates'), 'assembly');
+  inventory = use(inventory, 'lettuce');
+  expect(inventory.carried).toMatchObject({ kind: 'lettuce', state: 'raw', cutMs: 0 });
+  expect(use(inventory, 'assembly')).toBe(inventory);
+  inventory = use(inventory, 'chopping');
+  expect(advancePreparation(inventory, 5000, null).inventory).toBe(inventory);
+  const occupied = use(inventory, 'plates');
+  expect(advancePreparation(occupied, 5000, 'chopping').inventory).toBe(occupied);
+  inventory = advancePreparation(inventory, 1500, 'chopping').inventory;
+  inventory = use(inventory, 'chopping');
+  expect(advancePreparation(inventory, 5000, 'chopping').inventory).toBe(inventory);
+  inventory = use(inventory, 'chopping');
+  inventory = advancePreparation(inventory, 1499, 'chopping').inventory;
+  expect(inventory.surfaces.chopping).toMatchObject({ state: 'raw', cutMs: 2999 });
+  const finished = advancePreparation(inventory, 1, 'chopping');
+  expect(finished.messages).toEqual(['Salade découpée.']);
+  inventory = use(use(finished.inventory, 'chopping'), 'assembly');
+  expect(inventory.surfaces.assembly).toMatchObject({ contents: [{ kind: 'lettuce', state: 'chopped' }] });
+});
+
+it.each([1, 2, 3] as const)('provides two independent assembly boards at level %s', level => {
+  const available = stationsForLevel(level);
+  const boards = available.filter(value => value.id.startsWith('assembly'));
+  expect(boards).toHaveLength(2);
+  let inventory = createInventory(level);
+  const source = available.find(value => value.id === 'plates')!;
+  for (const board of boards) inventory = interact(interact(inventory, source).inventory, board).inventory;
+  expect(inventory.surfaces[boards[0]!.id]?.id).not.toBe(inventory.surfaces[boards[1]!.id]?.id);
+  const other = inventory.surfaces[boards[1]!.id];
+  inventory = interact(inventory, boards[0]!).inventory;
+  expect(inventory.carried?.kind).toBe('plate');
+  expect(inventory.surfaces[boards[1]!.id]).toBe(other);
+});

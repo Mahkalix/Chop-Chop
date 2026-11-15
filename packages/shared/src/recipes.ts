@@ -14,7 +14,7 @@ export type IngredientKind = Exclude<ItemKind, "plate">;
 export const INGREDIENT_STATES = {
   tomato: ["raw", "chopped"],
   meat: ["raw", "cooked", "burnt"],
-  lettuce: ["ready"],
+  lettuce: ["raw", "chopped"],
   tortilla: ["ready"],
   "white-sauce": ["ready"],
 } as const satisfies Record<IngredientKind, readonly string[]>;
@@ -41,6 +41,7 @@ export interface Preparation {
 }
 
 export const PREPARATIONS: readonly Preparation[] = [
+  { ingredient: "lettuce", action: "chop", from: "raw", to: "chopped", seconds: 3 },
   { ingredient: "tomato", action: "chop", from: "raw", to: "chopped", seconds: 3 },
   { ingredient: "meat", action: "cook", from: "raw", to: "cooked", seconds: 8 },
   { ingredient: "meat", action: "burn", from: "cooked", to: "burnt", seconds: 6 },
@@ -71,12 +72,12 @@ export const RECIPES: readonly Recipe[] = [
       { kind: "meat", state: "cooked" },
     ],
   },
-  { id: "tomato-salad", name: "Salade tomate", ingredients: [{ kind: "lettuce", state: "ready" }, { kind: "tomato", state: "chopped" }] },
+  { id: "tomato-salad", name: "Salade tomate", ingredients: [{ kind: "lettuce", state: "chopped" }, { kind: "tomato", state: "chopped" }] },
   { id: "complete-plate", name: "Assiette complète", ingredients: [
-    { kind: "lettuce", state: "ready" }, { kind: "tomato", state: "chopped" }, { kind: "meat", state: "cooked" },
+    { kind: "lettuce", state: "chopped" }, { kind: "tomato", state: "chopped" }, { kind: "meat", state: "cooked" },
   ] },
   { id: "wrap", name: "Wrap", ingredients: [
-    { kind: "tortilla", state: "ready" }, { kind: "lettuce", state: "ready" },
+    { kind: "tortilla", state: "ready" }, { kind: "lettuce", state: "chopped" },
     { kind: "tomato", state: "chopped" }, { kind: "meat", state: "cooked" }, { kind: "white-sauce", state: "ready" },
   ] },
 ];

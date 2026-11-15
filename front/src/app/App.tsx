@@ -1,3 +1,6 @@
+import { getServiceRules, RECIPES } from '@chopchop/shared';
+import { DishArt } from '../features/game/DishArt';
+import { ingredientArt, ingredientNames } from '../features/game/recipePresentation';
 import { isLocalDemo } from '../features/game/localDemo';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../features/auth/AuthProvider';
@@ -74,12 +77,22 @@ function Rules() {
       <section key={title}><h3>{title}</h3><p>{body}</p></section>
     )}</div>
     <div className={styles.row}>
-      <section><h3>LES RECETTES DU NIVEAU {level}</h3>Tomate préparée : assiette + tomate découpée<br/>Viande grillée : assiette + viande cuite
-        {level >= 2 && <><br/>Salade tomate : assiette + salade + tomate découpée<br/>Assiette complète : assiette + salade + tomate découpée + viande cuite<br/>La salade est prête à l’emploi. Pose une assiette sur un comptoir, puis ajoute les ingrédients un par un avec E, dans l’ordre de ton choix.</>}
-      {level === 3 && <><br/>Wrap : assiette + galette + salade + tomate découpée + viande cuite + sauce blanche. La galette et la sauce sont prêtes à l’emploi, sans cuisson supplémentaire. Ajoute les cinq ingrédients un par un avec E.</>}
+      <section><h3>LES RECETTES DU NIVEAU {level}</h3>
+        <div className={styles.visualRecipes}>{getServiceRules(level).recipes.map(id => {
+          const recipe = RECIPES.find(value => value.id === id)!;
+          return <div className={styles.visualRecipe} key={id}>
+            <DishArt recipeId={id} /><strong>{recipe.name}</strong>
+            <div className={styles.recipeIngredients} aria-label={recipe.ingredients.map(value => ingredientNames[value.kind]).join(', ')}>
+              {recipe.ingredients.map(value => <img key={value.kind} src={ingredientArt(value.kind)} alt={ingredientNames[value.kind]} title={ingredientNames[value.kind]} />)}
+            </div>
+          </div>;
+        })}</div>
       </section>
-      <section><h3>À RETENIR</h3>Un seul objet porté à la fois. Pose-le avant d’en prendre un autre.<br/>Viande : pose-la sur le feu, attends 8 s, puis récupère-la.<br/>Après 6 s de plus, elle brûle : −10 points et combo remis à 1.
-        {level >= 2 ? <> Le grill prend feu et devient inutilisable. Prends l’extincteur sur son support, approche-toi du grill et maintiens C pendant 3 s. Repose l’extincteur, puis prends la viande brûlée et jette-la à la poubelle. Le grill est de nouveau disponible. Aucun malus supplémentaire.</> : <> Jette la viande brûlée à la poubelle.</>}</section>
+      <section className={styles.reminders}><h3>À RETENIR</h3>
+        <p>Un objet à la fois · Assemble sur une assiette.</p>
+        <p>Découpe : <b>3 s</b>, mains libres.<br />Viande : <b>8 s</b> de cuisson, puis <b>6 s</b> avant brûlure (−10 pts, combo perdu).</p>
+        {level >= 2 ? <p>Feu : prends l’extincteur, maintiens <b>C 3 s</b>, puis jette la viande brûlée.</p> : <p>Viande brûlée ? Direction poubelle.</p>}
+      </section>
     </div>
   </>;
 }

@@ -3,9 +3,9 @@ import { canAssemble, getServiceRules, matchRecipe, RECIPES, type ServiceLevel, 
 /** Local inventory types used by kitchen interactions and preparation. */
 export type ItemKind = SharedItemKind | 'extinguisher';
 export type Item =
-  | (Extract<SharedIngredient, { kind: 'tomato' }> & { readonly id: number; readonly cutMs: number })
+  | (Extract<SharedIngredient, { kind: 'tomato' | 'lettuce' }> & { readonly id: number; readonly cutMs: number })
   | (Extract<SharedIngredient, { kind: 'meat' }> & { readonly id: number; readonly cookMs: number })
-  | (Extract<SharedIngredient, { kind: 'lettuce' | 'tortilla' | 'white-sauce' }> & { readonly id: number })
+  | (Extract<SharedIngredient, { kind: 'tortilla' | 'white-sauce' }> & { readonly id: number })
   | { readonly id: number; readonly kind: 'extinguisher' }
   | { readonly id: number; readonly kind: 'plate'; readonly contents: readonly SharedIngredient[] };
 export type Station =
@@ -26,7 +26,7 @@ export type InteractionResult = { readonly inventory: Inventory; readonly messag
 export function describeItem(item: Item): string {
   if (item.kind === 'tomato') return item.state === 'chopped' ? 'Tomate découpée' : 'Tomate';
   if (item.kind === 'meat') return { raw: 'Viande crue', cooked: 'Viande cuite', burnt: 'Viande brûlée' }[item.state];
-  if (item.kind === 'lettuce') return 'Salade';
+  if (item.kind === 'lettuce') return item.state === 'chopped' ? 'Salade découpée' : 'Salade entière';
   if (item.kind === 'tortilla') return 'Galette';
   if (item.kind === 'white-sauce') return 'Sauce blanche';
   if (item.kind === 'extinguisher') return 'Extincteur · maintenir C près du feu';
@@ -36,9 +36,9 @@ export function describeItem(item: Item): string {
 }
 
 function createItem(id: number, kind: SharedItemKind): Item {
-  if (kind === 'tomato') return { id, kind, state: 'raw', cutMs: 0 };
+  if (kind === 'tomato' || kind === 'lettuce') return { id, kind, state: 'raw', cutMs: 0 };
   if (kind === 'meat') return { id, kind, state: 'raw', cookMs: 0 };
-  if (kind === 'lettuce' || kind === 'tortilla' || kind === 'white-sauce') return { id, kind, state: 'ready' };
+  if (kind === 'tortilla' || kind === 'white-sauce') return { id, kind, state: 'ready' };
   return { id, kind, contents: [] };
 }
 

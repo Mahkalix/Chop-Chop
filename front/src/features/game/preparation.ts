@@ -14,7 +14,7 @@ export type PreparationProgress = { label: string; percent: number };
 /** Progress belongs to the object, so taking it away pauses rather than duplicates or resets it. */
 function advanceItem(item: Item, station: Station, deltaMs: number, cutting: boolean): Item {
   if (station.kind !== 'surface') return item;
-  if (station.preparation === 'chop' && item.kind === 'tomato' && item.state === 'raw' && cutting) {
+  if (station.preparation === 'chop' && (item.kind === 'tomato' || item.kind === 'lettuce') && item.state === 'raw' && cutting) {
     const cutMs = Math.min(preparationTimings.chopMs, item.cutMs + deltaMs);
     return { ...item, cutMs, state: cutMs >= preparationTimings.chopMs ? 'chopped' : 'raw' };
   }
@@ -38,7 +38,7 @@ export function advancePreparation(inventory: Inventory, deltaMs: number, cuttin
     if (next === item) continue;
     surfaces ??= { ...inventory.surfaces };
     surfaces[station.id] = next;
-    if (item.kind === 'tomato' && next.kind === 'tomato' && item.state !== next.state) messages.push('Tomate découpée.');
+    if ((item.kind === 'tomato' || item.kind === 'lettuce') && next.kind === item.kind && item.state !== next.state) messages.push(item.kind === 'tomato' ? 'Tomate découpée.' : 'Salade découpée.');
     if (item.kind === 'meat' && next.kind === 'meat' && item.state !== next.state) {
       messages.push(next.state === 'burnt' ? 'Viande brûlée : direction poubelle.' : 'Viande cuite : récupère-la avant qu’elle ne brûle.');
     }
@@ -48,8 +48,8 @@ export function advancePreparation(inventory: Inventory, deltaMs: number, cuttin
 
 export function getPreparationProgress(item: Item | null | undefined, station: Station): PreparationProgress | null {
   if (!item || station.kind !== 'surface') return null;
-  if (station.preparation === 'chop' && item.kind === 'tomato') {
-    return { label: item.state === 'chopped' ? 'Tomate découpée' : 'Découpe · maintenir C, mains libres', percent: Math.min(100, item.cutMs / preparationTimings.chopMs * 100) };
+  if (station.preparation === 'chop' && (item.kind === 'tomato' || item.kind === 'lettuce')) {
+    return { label: item.state === 'chopped' ? (item.kind === 'tomato' ? 'Tomate découpée' : 'Salade découpée') : 'Découpe · maintenir C, mains libres', percent: Math.min(100, item.cutMs / preparationTimings.chopMs * 100) };
   }
   if (station.preparation === 'cook' && item.kind === 'meat') {
     if (item.state === 'burnt') return { label: 'Viande brûlée', percent: 100 };

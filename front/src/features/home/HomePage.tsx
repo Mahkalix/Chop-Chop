@@ -1,6 +1,6 @@
 import { isLocalDemo } from '../game/localDemo';
 import { useState } from 'react';
-import { getServiceRules, type ServiceLevel } from '@chopchop/shared';
+import { getServiceRules } from '@chopchop/shared';
 import { readSelectedLevel } from '../game/levelSelection';
 import s from './Selection.module.scss';
 
@@ -18,10 +18,11 @@ export function HomePage() {
     <h1><img src="/menu/logo.png" alt="CHOP CHOP" /></h1>
     <div className={s.columns}>
       <section className={s.level}>
-        <label htmlFor="service-level">CHOISIS TON NIVEAU </label>
-        <select id="service-level" value={level} onChange={event => {
-          const next = Number(event.target.value) as ServiceLevel; setLevel(next); sessionStorage.setItem('level', String(next));
-        }}><option value="1">1 · Tomate et viande</option><option value="2">2 · Salade et incendies</option><option value="3">3 · Wrap et sauce blanche</option></select>
+        <div className={s.levelPicker} role="group" aria-label="Choisis ton niveau">
+          {([1, 2, 3] as const).map(value => <button key={value} type="button" aria-pressed={level === value} onClick={() => { setLevel(value); sessionStorage.setItem('level', String(value)); }}>
+            <span>0{value}</span><strong>{value === 1 ? 'LES BASES' : value === 2 ? 'CHAUD DEVANT' : 'LE GRAND WRAP'}</strong>
+          </button>)}
+        </div>
         <h2>0{level} / {level === 1 ? 'PREMIER COUP DE FEU' : level === 2 ? 'CHAUD DEVANT' : 'LE GRAND WRAP'} <time>03:00</time></h2>
         <img className={s.map} src="/menu/kitchen.png" alt="Ambiance de la cuisine ; les comptoirs varient selon le niveau" />
           <div className={s.stars}>{rules.stars.map((score,i)=><div key={score}><span aria-label={`${i+1} étoiles`}>{Array.from({length:i+1},(_,j)=><img key={j} src="/menu/star.svg" alt="" />)}</span>{score.toLocaleString('fr-FR')} pts</div>)}</div>

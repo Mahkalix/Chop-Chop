@@ -12,10 +12,10 @@ function prepare(kinds: Ingredient['kind'][]) {
   let inventory = use(use(createInventory(3), 'plates'), 'assembly');
   for (const kind of kinds) {
     inventory = use(inventory, kind === 'tomato' ? 'tomatoes' : kind);
-    if (kind === 'tomato' || kind === 'meat') {
-      const target = kind === 'tomato' ? 'chopping' : 'grill';
+    if (kind === 'tomato' || kind === 'lettuce' || kind === 'meat') {
+      const target = kind === 'meat' ? 'grill' : 'chopping';
       inventory = use(inventory, target);
-      inventory = advancePreparation(inventory, kind === 'tomato' ? 3000 : 8000, target).inventory;
+      inventory = advancePreparation(inventory, kind === 'meat' ? 8000 : 3000, target).inventory;
       inventory = use(inventory, target);
     }
     inventory = use(inventory, 'assembly');
