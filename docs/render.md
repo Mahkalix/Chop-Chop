@@ -40,3 +40,30 @@ Variables du service (déjà dans `render.yaml`, sauf `DATABASE_URL`) :
   `pnpm --filter @chopchop/api db:migrate` avec `DATABASE_URL` (ou `DIRECT_URL`) dans `apps/api/.env`.
 - **Déploiement automatique.** Chaque push sur `main` redéploie l'API. Pour revenir en arrière : Render →
   service → Events → Rollback.
+
+## Vérification du service déployé (15 novembre 2026)
+
+Service : `https://chop-chop-api.onrender.com`, construit depuis `main`, sur la même base Supabase que l'environnement local.
+
+| Contrôle | Résultat |
+|---|---|
+| `GET /health` | `200 {"status":"ok"}` |
+| `GET /leaderboard/1` (route publique) | `200`, lit bien la base partagée |
+| `GET /me` sans jeton ou avec un jeton invalide | `401` |
+| `GET /me` avec un jeton anonyme valide du projet Supabase | `404 Profile not created yet` : jeton accepté (un jeton expiré, valable une heure, renvoie `401`) |
+| CORS depuis `https://chop-chop-front.vercel.app` | autorisé |
+| CORS depuis une autre origine | refusé (aucun en-tête `Access-Control-Allow-Origin`) |
+| Limitation des requêtes | active (`x-ratelimit-limit: 60` sur les lectures) |
+
+Base Supabase, contrôlée en lecture seule dans le SQL Editor :
+
+- RLS activée sur `joueur`, `niveau`, `version_regles` et `partie`, sans politique : tables fermées à l'accès direct par la Data API.
+- 5 migrations appliquées (`0000` à `0004`), conformes au dépôt.
+- Niveaux 1 à 5 présents, aucune partie sur les niveaux 4 et 5 ; une seule version de règles, `v1`.
+- Index de `partie` conformes aux migrations (classement, joueur, partie en cours unique).
+- Les droits par défaut de Supabase sur `anon` et `authenticated` existent, mais la RLS sans politique les neutralise.
+
+Reste à faire :
+
+- Le front de production (`chop-chop-front.vercel.app`) ne contient pas encore l'appel au classement : renseigner `VITE_API_URL=https://chop-chop-api.onrender.com` dans Vercel et redéployer après fusion du front (#50).
+- Les modifications de l'API de la branche `fix/api-decisions-classement` ne seront en ligne qu'après fusion dans `main` (déploiement automatique).
