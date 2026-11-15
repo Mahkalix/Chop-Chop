@@ -27,7 +27,11 @@ export const ProfileInputSchema = z.object({ pseudo: PseudoSchema });
 /** POST /games */
 export const StartGameSchema = z.object({ levelId: LevelIdSchema });
 
-/** POST /games/:id/finish. The duration is measured by the server, never sent by the client. */
+/**
+ * POST /games/:id/finish, only when the timer reaches zero: leaving early is an abandon, never ranked.
+ * The duration is measured by the server, never sent by the client. It must reach the rules duration
+ * (minus a small margin); there is no upper bound because pauses are unlimited and not tracked.
+ */
 export const FinishGameSchema = z.object({
   score: z.number().int().min(0),
   bestCombo: z.number().int().min(0).max(1_000).default(0),
@@ -64,7 +68,10 @@ export interface BestScore {
   score: number;
 }
 
-/** GET /me/best: only the levels the player has finished at least once. */
+/**
+ * GET /me/best: only the levels the player has finished at least once. Every rules version counts,
+ * so a best score may come from an older version and differ from the player's current ranked record.
+ */
 export interface BestScoresResponse {
   scores: BestScore[];
 }
@@ -81,14 +88,18 @@ export interface StartGameResponse {
 }
 
 export interface FinishGameResponse {
-  /** Place of the player's best game on this level (not necessarily the game just played). */
+  /**
+   * Place of the player's best game on this level, in the rules version of the game just played
+   * (not necessarily that game). It is the rank at that moment and may change afterwards.
+   */
   rank: number;
   /** Score of the game just played. */
   score: number;
+  /** Wall-clock duration measured by the server, pauses included. */
   durationMs: number;
-  /** Best score of the player on this level, this game included. */
+  /** Best score of the player on this level and rules version, this game included. */
   bestScore: number;
-  /** True if this game is now the player's best one on this level (new record). */
+  /** True if this game is now the player's best one on this level and rules version (new record). */
   isRecord: boolean;
 }
 

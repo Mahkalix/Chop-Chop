@@ -66,7 +66,7 @@ function LiveRanking() {
           </tr>)}</tbody>
         </table></div></>)}
     </div>
-    <p>Un meilleur score par joueur et par niveau. Départage par durée, puis par date.</p>
+    <p>Un meilleur score par joueur et par niveau, premier arrivé passe devant.</p>
   </section>;
 }
 
