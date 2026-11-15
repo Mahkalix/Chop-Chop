@@ -1,6 +1,6 @@
 # Essai local des trois niveaux (issue #85)
 
-Branche commune : `feat/85-niveaux-1-2-3`. Les travaux #63, #64 et #65 sont regroupés ici pour validation par Maxence avant toute PR. Aucun push ni déploiement.
+Implémentation : `feat/85-niveaux-1-2-3`, [PR #86](https://github.com/Mahkalix/Chop-Chop/pull/86). Le dernier `main` incluant la PR #83 est intégré. Règles d’API et de classement conservées, sans migration de base.
 
 ## Démarrage sans compte
 
@@ -11,7 +11,7 @@ pnpm install --frozen-lockfile
 pnpm dev:demo
 ```
 
-Ouvrir l’adresse affichée par Vite (habituellement `http://127.0.0.1:5173`). Choisir le niveau et le chef, saisir un pseudo, puis JOUER et COMMENCER. Arrêter avec Ctrl+C.
+Ouvrir l’adresse affichée par Vite (habituellement `http://127.0.0.1:5173`). Choisir le niveau et le chef, saisir un pseudo, puis JOUER. Le lancement enchaîne automatiquement Mise en place, Prêt ?, Partez !. Arrêter avec Ctrl+C.
 
 Le mode **ESSAI LOCAL** utilise le vrai jeu et ses chronos. Il ne contacte ni Supabase ni l’API. Les 50 dernières parties terminées sont conservées dans cet onglet (`sessionStorage`), avec un classement local par niveau et pseudo. Un rechargement conserve les résultats ; fermer l’onglet les efface. Aucun score n’est envoyé au classement partagé. Ce mode exige à la fois le serveur de développement et `--mode demo` ; il est désactivé dans la compilation de production.
 
@@ -38,7 +38,7 @@ Commandes : ZQSD ou flèches pour bouger, E pour prendre/poser/servir, C mainten
 
 Deux commandes initiales, trois maximum. Cuisson 8 s, brûlure après 6 s supplémentaires, malus unique −10 (plancher zéro) et combo à ×1. Feu immédiat à la brûlure aux niveaux 2/3, limité au grill, aucun malus d’extinction. Pause complète, reprise après 3-2-1 hors chrono. Abandon jamais classé.
 
-## Vérifications du 15 novembre 2026
+## Vérifications initiales du 15 novembre 2026 (historique)
 
 - `pnpm typecheck`, `pnpm test`, `pnpm build:front` et `git diff --check` réussis.
 - 216 tests : 26 partagés, 81 API, 108 front, 1 script. Dont 120 permutations d’assemblage du wrap dans un test, refus des compositions incorrectes, cinq livraisons, stations accessibles/non superposées, cadence/patience, extinction, contrats API pour les trois niveaux, isolation du mode local et absence de réseau.
@@ -47,16 +47,16 @@ Deux commandes initiales, trois maximum. Cuisson 8 s, brûlure après 6 s suppl�
 - Brûlure à 14 s, grill bloqué, extincteur récupéré, extinction suspendue par une pause à 43 % puis terminée, viande brûlée jetée, nouvelle viande cuite et récupérée. Une seule pénalité de 10 points.
 - Fin normale après 180 secondes actives : **1 096 points, cinq commandes servies, huit expirées, meilleur combo ×3, une étoile**. Classement local du niveau 3 correct et conservé après rechargement. Aucun appel externe et aucune erreur JavaScript.
 - Démarrage puis abandon annulé/confirmé vérifiés pour chacun des trois niveaux. Aucun nouveau score après abandon et aucune contamination du classement entre niveaux.
-- Retour depuis Comment jouer accessible en 1440 × 1000 et 1280 × 720 après correction du défilement des longues règles.
+- Retour depuis Comment jouer accessible en 1440 × 1000 et 1280 × 720 (état initial ; les règles actuelles tiennent sans défilement dans le cadre de référence).
 
 Limites : sauvegarde réelle Supabase/PostgreSQL à vérifier avec les services autorisés ; les parcours de développement ne prouvent pas le déploiement. Les seuils d’étoiles restent à équilibrer avec des parties humaines. Avertissements de compilation préexistants sur les annotations Zod et la taille du module Phaser. La réconciliation globale Docusaurus de l’issue #81 reste sur sa branche indépendante.
 
-## Points à regarder pendant ton essai
+## Éléments vérifiés pendant les essais
 
 - Reconnaissance des ingrédients et du wrap, lisibilité des cinq icônes de commande.
 - Placement et distance des comptoirs, temps d’assemblage face aux délais de commande.
 - Clarté du feu, de l’extinction, du nettoyage et du contenu porté.
-- Rythme des trois niveaux, score et seuils d’étoiles avant la PR.
+- Rythme des trois niveaux, score et seuils d’étoiles affichés.
 
 ## Ajustement visuel après essai (15 novembre 2026)
 
@@ -79,3 +79,9 @@ Référence vérifiée : Figma CHOP-CHOP, écran « 06 — Service en cours », 
 - Lancement automatique : mise en place avec progression réelle, prêt, partez ; chrono démarré ensuite. Pause et abandon sur la cuisine assombrie.
 - Parcours navigateur récents : lancement, salade découpée puis assemblages à deux et trois ingrédients, consultation des recettes, reprise et abandon.
 - Équilibrage encore à valider : délais de commandes et seuils d’étoiles provisoires. La proposition de découpe à 2 s n’est pas appliquée (3 s actuellement).
+
+## État courant de l’interface
+
+Accueil avec sélection du niveau par boutons et six chefs originaux. Loader crème, barre noire et remplissage rouge suivant le chargement ; Prêt puis Partez sur fond rouge, sans consommation de temps actif. Pause et abandon en fenêtres sur cuisine assombrie, décompte de reprise centré, commandes dépliables. Règles illustrées sans défilement dans le cadre 1440 × 900. Assiettes et ingrédients harmonisés entre commandes, recettes et comptoirs. Les messages ordinaires de prise/dépôt et le libellé de mains vides sont masqués.
+
+La PR #86 ajoute côté API le champ `levels` de `GET /recipes` et met à jour ses données partagées. Les contrôles d’équité, plafonds, classement par version et départage de la #83 restent inchangés.

@@ -1,5 +1,7 @@
 # Niveau 2 (issue #64)
 
+> Compte rendu historique du développement initial. Pour les règles et parcours actuels de la PR #86, lire [le guide des trois niveaux](local-levels.md) et [CONTEXT.md](../CONTEXT.md). Les mentions de branches séparées, de bouton Commencer ou de salade prête ci-dessous décrivent uniquement cet ancien état.
+
 Implémentation locale du 15 novembre 2026, branche `feat/64-level-2`.
 Base : niveau 1, commit local `e6e43e8` de `feat/63-level-1`. Aucun push, PR ou déploiement effectué. Avant une PR, récupérer et intégrer le dernier `main`, puis vérifier à nouveau.
 
