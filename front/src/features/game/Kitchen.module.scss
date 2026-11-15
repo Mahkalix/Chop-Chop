@@ -36,3 +36,5 @@
 .inventory { top: 180px; left: auto; right: 12px; width: min(260px, calc(100% - 24px)); font-size: 13px; pointer-events: none; }
 .fullscreen { left: auto; right: 12px; top: auto; bottom: 64px; }
 @media (max-width: 760px) { .hud { gap: 8px; } .orders { gap: 4px; } .order { width: 120px; font-size: 11px; padding: 6px; } .score { min-width: 130px; padding: 6px; font-size: 12px; } .order span { display: none; } }
+.order span { gap: 4px; flex-wrap: wrap; }
+.order img { width: 32px; height: 28px; }

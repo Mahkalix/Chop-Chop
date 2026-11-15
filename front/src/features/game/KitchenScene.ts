@@ -9,7 +9,7 @@ import { advanceService, createService, deliver, penalizeBurns, type Service } f
 import { getServiceRules, EXTINGUISH_MS, type ServiceLevel } from '@chopchop/shared';
 
 const textureOf = (item: Item) => item.kind === 'plate' && item.contents.length
-  ? `dish-${item.contents.map(value => value.kind).sort().join('-')}`
+  ? (item.contents.length === 5 ? 'item-wrap' : `dish-${item.contents.map(value => value.kind).sort().join('-')}`)
   : 'item-' + (item.kind === 'tomato' ? (item.state === 'chopped' ? 'chopped' : 'whole') : item.kind === 'meat' && item.state !== 'raw' ? item.state : item.kind);
 
 export type InteractionStatus = { carried: string | null; target: string | null; message: string; preparation: PreparationProgress | null; fireCount: number };
@@ -73,7 +73,7 @@ export class KitchenScene extends Phaser.Scene {
     for (const key of new Set(this.stations.map(station => station.texture))) {
       this.load.image(key, `/kitchen/${key}.png`);
     }
-    for (const name of ['whole', 'chopped', 'meat', 'cooked', 'burnt', 'plate', 'lettuce', 'extinguisher']) {
+    for (const name of ['whole', 'chopped', 'meat', 'cooked', 'burnt', 'plate', 'lettuce', 'extinguisher', 'tortilla', 'white-sauce', 'wrap']) {
       this.load.svg('item-' + name, '/kitchen/items/' + name + '.svg');
     }
     this.load.svg('pan', '/kitchen/items/pan.svg');
@@ -83,15 +83,15 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   create() {
-    const ingredients = ['tomato', 'meat', 'lettuce'];
-    for (let mask = 1; mask < 8; mask++) {
+    const ingredients = this.levelId === 3 ? ['tomato', 'meat', 'lettuce', 'tortilla', 'white-sauce'] : ['tomato', 'meat', 'lettuce'];
+    for (let mask = 1; mask < (1 << ingredients.length); mask++) {
       const kinds = ingredients.filter((_, index) => mask & (1 << index));
       const texture = this.add.renderTexture(0, 0, 128, 96).setVisible(false);
       texture.draw(this.add.image(0, 0, 'item-plate').setDisplaySize(112, 80).setVisible(false), 64, 48);
       kinds.forEach((kind, index) => {
-        const key = kind === 'tomato' ? 'chopped' : kind === 'meat' ? 'cooked' : 'lettuce';
-        const image = this.add.image(0, 0, 'item-' + key).setDisplaySize(48, 36).setVisible(false);
-        texture.draw(image, 48 + index * 16, 40 + (index % 2) * 10);
+        const key = kind === 'tomato' ? 'chopped' : kind === 'meat' ? 'cooked' : kind;
+        const image = this.add.image(0, 0, 'item-' + key).setDisplaySize(kinds.length > 3 ? 32 : 48, kinds.length > 3 ? 26 : 36).setVisible(false);
+        texture.draw(image, 40 + index * 12, 40 + (index % 2) * 10);
       });
       texture.saveTexture('dish-' + kinds.sort().join('-'));
     }
@@ -107,7 +107,7 @@ export class KitchenScene extends Phaser.Scene {
     for (const { id, texture, label, x, y } of this.stations) {
       const sprite = obstacles.create(x + 72, y + 72, texture).setDisplaySize(144, 144).refreshBody();
       this.stationSprites.set(id, sprite);
-      if (id === 'lettuce') this.add.image(x + 72, y + 68, 'item-lettuce');
+      if (['lettuce', 'tortilla', 'white-sauce'].includes(id)) this.add.image(x + 72, y + 68, 'item-' + id);
       if (id === 'grill') this.add.image(x + 72, y + 68, 'pan').setOrigin(42 / 112, 46 / 80);
       if (label) {
         this.add.text(x + 72, y + 148, label, {

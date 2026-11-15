@@ -93,3 +93,6 @@
   .row:nth-of-type(1) section:last-child kbd { width: 64px; }
   .row:nth-of-type(3) h3 { font-size: 23px; }
 }
+/* Menus live in the fixed 1440 × 900 stage; longer level rules must remain scrollable. */
+.page { height: 900px; overflow-y: auto; }
+.page[data-screen='regles'] > * { flex-shrink: 0; }

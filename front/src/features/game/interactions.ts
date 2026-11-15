@@ -5,7 +5,7 @@ export type ItemKind = SharedItemKind | 'extinguisher';
 export type Item =
   | (Extract<SharedIngredient, { kind: 'tomato' }> & { readonly id: number; readonly cutMs: number })
   | (Extract<SharedIngredient, { kind: 'meat' }> & { readonly id: number; readonly cookMs: number })
-  | (Extract<SharedIngredient, { kind: 'lettuce' }> & { readonly id: number })
+  | (Extract<SharedIngredient, { kind: 'lettuce' | 'tortilla' | 'white-sauce' }> & { readonly id: number })
   | { readonly id: number; readonly kind: 'extinguisher' }
   | { readonly id: number; readonly kind: 'plate'; readonly contents: readonly SharedIngredient[] };
 export type Station =
@@ -27,23 +27,25 @@ export function describeItem(item: Item): string {
   if (item.kind === 'tomato') return item.state === 'chopped' ? 'Tomate découpée' : 'Tomate';
   if (item.kind === 'meat') return { raw: 'Viande crue', cooked: 'Viande cuite', burnt: 'Viande brûlée' }[item.state];
   if (item.kind === 'lettuce') return 'Salade';
+  if (item.kind === 'tortilla') return 'Galette';
+  if (item.kind === 'white-sauce') return 'Sauce blanche';
   if (item.kind === 'extinguisher') return 'Extincteur · maintenir C près du feu';
   if (!item.contents.length) return 'Assiette vide';
-  const recipe = matchRecipe(item.contents, getServiceRules(2).recipes);
-  return RECIPES.find(value => value.id === recipe)?.name ?? `Assiette en préparation : ${item.contents.map(value => ({ tomato: 'tomate', meat: 'viande', lettuce: 'salade' })[value.kind]).join(' + ')}`;
+  const recipe = matchRecipe(item.contents, getServiceRules(3).recipes);
+  return RECIPES.find(value => value.id === recipe)?.name ?? `Assiette en préparation : ${item.contents.map(value => ({ tomato: 'tomate', meat: 'viande', lettuce: 'salade', tortilla: 'galette', 'white-sauce': 'sauce blanche' })[value.kind]).join(' + ')}`;
 }
 
 function createItem(id: number, kind: SharedItemKind): Item {
   if (kind === 'tomato') return { id, kind, state: 'raw', cutMs: 0 };
   if (kind === 'meat') return { id, kind, state: 'raw', cookMs: 0 };
-  if (kind === 'lettuce') return { id, kind, state: 'ready' };
+  if (kind === 'lettuce' || kind === 'tortilla' || kind === 'white-sauce') return { id, kind, state: 'ready' };
   return { id, kind, contents: [] };
 }
 
 export function createInventory(levelId: ServiceLevel = 1): Inventory {
   return { levelId, fires: {}, carried: null,
-    surfaces: levelId === 2 ? { extinguisher: { id: 1, kind: 'extinguisher' } } : {},
-    nextItemId: levelId === 2 ? 2 : 1, discarded: 0 };
+    surfaces: levelId >= 2 ? { extinguisher: { id: 1, kind: 'extinguisher' } } : {},
+    nextItemId: levelId >= 2 ? 2 : 1, discarded: 0 };
 }
 
 /** An interaction either transfers one existing item or leaves the inventory unchanged. */

@@ -1,10 +1,10 @@
 /**
  * Rules of the kitchen: ingredients and their states, how they are prepared, the recipes and when
- * they become available. The values come from `documentation/docs/gameplay.md` and `score.md`
- * and are the prototype's proposals: change them here, and nowhere else.
+ * they become available. Current level catalogs follow the confirmed decisions in CONTEXT.md.
+ * Legacy prototype phases remain exported for compatibility, not for active level progression.
  */
 
-export const ITEM_KINDS = ["tomato", "meat", "plate", "lettuce"] as const;
+export const ITEM_KINDS = ["tomato", "meat", "plate", "lettuce", "tortilla", "white-sauce"] as const;
 export type ItemKind = (typeof ITEM_KINDS)[number];
 
 /** What goes on a plate: every item except the plate itself. */
@@ -15,6 +15,8 @@ export const INGREDIENT_STATES = {
   tomato: ["raw", "chopped"],
   meat: ["raw", "cooked", "burnt"],
   lettuce: ["ready"],
+  tortilla: ["ready"],
+  "white-sauce": ["ready"],
 } as const satisfies Record<IngredientKind, readonly string[]>;
 
 /** An ingredient in a given state, e.g. `{ kind: "meat", state: "cooked" }`. */
@@ -49,7 +51,7 @@ export function preparationFor(ingredient: Ingredient): Preparation | null {
   return PREPARATIONS.find((p) => p.ingredient === ingredient.kind && p.from === ingredient.state) ?? null;
 }
 
-export type RecipeId = "prepared-tomato" | "grilled-meat" | "mixed-plate" | "tomato-salad" | "complete-plate";
+export type RecipeId = "prepared-tomato" | "grilled-meat" | "mixed-plate" | "tomato-salad" | "complete-plate" | "wrap";
 
 export interface Recipe {
   readonly id: RecipeId;
@@ -73,12 +75,17 @@ export const RECIPES: readonly Recipe[] = [
   { id: "complete-plate", name: "Assiette complète", ingredients: [
     { kind: "lettuce", state: "ready" }, { kind: "tomato", state: "chopped" }, { kind: "meat", state: "cooked" },
   ] },
+  { id: "wrap", name: "Wrap", ingredients: [
+    { kind: "tortilla", state: "ready" }, { kind: "lettuce", state: "ready" },
+    { kind: "tomato", state: "chopped" }, { kind: "meat", state: "cooked" }, { kind: "white-sauce", state: "ready" },
+  ] },
 ];
 
 /** Cumulative catalogs, available from the first second. mixed-plate is legacy only. */
 export const RECIPES_BY_LEVEL = {
   1: ["prepared-tomato", "grilled-meat"],
   2: ["prepared-tomato", "grilled-meat", "tomato-salad", "complete-plate"],
+  3: ["prepared-tomato", "grilled-meat", "tomato-salad", "complete-plate", "wrap"],
 } as const satisfies Record<number, readonly RecipeId[]>;
 
 const keyOf = (ingredient: Ingredient) => `${ingredient.kind}:${ingredient.state}`;

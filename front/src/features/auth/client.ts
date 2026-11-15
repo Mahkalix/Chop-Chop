@@ -1,8 +1,10 @@
+import { isLocalDemo } from '../game/localDemo';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 let client: SupabaseClient | undefined;
 
 export function getAuthClient(): SupabaseClient | null {
+  if (isLocalDemo()) return null;
   const url = import.meta.env.VITE_SUPABASE_URL?.trim();
   const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!url || !key) return null;

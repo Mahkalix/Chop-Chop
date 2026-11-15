@@ -1,3 +1,4 @@
+import { isLocalDemo, startLocalGame, finishLocalGame, abandonLocalGame, localHistory } from './localDemo';
 import type { ServiceLevel, FinishGameInput, FinishGameResponse, PlayerGamesResponse, StartGameResponse } from '@chopchop/shared';
 
 export class GameApiError extends Error {
@@ -28,14 +29,16 @@ const invalidResponse = () => new GameApiError(0, 'Le service a renvoyé une ré
 const nonNegative = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
 export async function startGame(token: string, levelId: ServiceLevel = 1): Promise<StartGameResponse> {
+  if (isLocalDemo()) return startLocalGame(levelId);
   const data = await gameRequest<StartGameResponse>(token, '/games', { levelId });
   if (!data || typeof data.gameId !== 'string' || !data.gameId || data.levelId !== levelId
     || typeof data.startedAt !== 'string' || !Number.isFinite(Date.parse(data.startedAt))) throw invalidResponse();
   return data;
 }
-export const abandonGame = (token: string, id: string, keepalive = false) => gameRequest<void>(token, `/games/${id}/abandon`, {}, keepalive);
+export const abandonGame = (token: string, id: string, keepalive = false) => isLocalDemo() ? Promise.resolve(abandonLocalGame(id)) : gameRequest<void>(token, `/games/${id}/abandon`, {}, keepalive);
 
 export async function finishGame(token: string, id: string, result: FinishGameInput): Promise<FinishGameResponse> {
+  if (isLocalDemo()) return finishLocalGame(id, result);
   const data = await gameRequest<FinishGameResponse>(token, `/games/${id}/finish`, result);
   if (!data || !Number.isInteger(data.rank) || data.rank < 1 || !nonNegative(data.score)
     || !nonNegative(data.bestScore) || !nonNegative(data.durationMs) || typeof data.isRecord !== 'boolean') throw invalidResponse();
@@ -43,6 +46,7 @@ export async function finishGame(token: string, id: string, result: FinishGameIn
 }
 
 export async function gameHistory(token: string): Promise<PlayerGamesResponse> {
+  if (isLocalDemo()) return localHistory();
   const data = await gameRequest<PlayerGamesResponse>(token, '/me/games?limit=50');
   if (!data || !Array.isArray(data.games) || !data.games.every(game => game && typeof game.gameId === 'string')) throw invalidResponse();
   return data;

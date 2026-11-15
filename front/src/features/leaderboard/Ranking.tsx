@@ -1,3 +1,4 @@
+import { isLocalDemo } from '../game/localDemo';
 import { useEffect, useState } from 'react';
 import type { LeaderboardEntry, LeaderboardResponse } from '@chopchop/shared';
 import { fetchLeaderboard } from './api';
@@ -10,7 +11,7 @@ type Result =
   | { status: 'error'; message: string };
 
 export function Ranking() {
-  if (!import.meta.env.VITE_API_URL?.trim()) {
+  if (!isLocalDemo() && !import.meta.env.VITE_API_URL?.trim()) {
     return <section className={styles.upcoming} aria-labelledby="ranking-soon">
       <img src="/menu/star.svg" alt="" width="48" height="48" />
       <h2 id="ranking-soon">Classement indisponible</h2>
@@ -50,7 +51,7 @@ function LiveRanking() {
     <select id="ranking-level" value={level} onChange={event => changeLevel(Number(event.target.value))}>
       {[1, 2, 3].map(id => <option key={id} value={id}>Niveau {id}</option>)}
     </select>
-    <h2 className={styles.title}>TOP 5 · LES AS DU FOURNEAU</h2>
+    <h2 className={styles.title}>{isLocalDemo() ? "TOP 5 LOCAL · CET ONGLET UNIQUEMENT" : "TOP 5 · LES AS DU FOURNEAU"}</h2>
     <div aria-live="polite" aria-busy={result.status === 'loading'}>
       {result.status === 'loading' && <p>Chargement du classement…</p>}
       {result.status === 'error' && <>

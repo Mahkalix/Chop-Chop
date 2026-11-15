@@ -1,3 +1,4 @@
+import { isLocalDemo } from '../game/localDemo';
 import { useState } from 'react';
 import { getServiceRules, type ServiceLevel } from '@chopchop/shared';
 import { readSelectedLevel } from '../game/levelSelection';
@@ -20,9 +21,9 @@ export function HomePage() {
         <label htmlFor="service-level">CHOISIS TON NIVEAU </label>
         <select id="service-level" value={level} onChange={event => {
           const next = Number(event.target.value) as ServiceLevel; setLevel(next); sessionStorage.setItem('level', String(next));
-        }}><option value="1">1 · Tomate et viande</option><option value="2">2 · Salade et incendies</option></select>
-        <h2>0{level} / {level === 1 ? 'PREMIER COUP DE FEU' : 'CHAUD DEVANT'} <time>03:00</time></h2>
-        <img className={s.map} src="/menu/kitchen.png" alt="Aperçu de la cuisine du premier service" />
+        }}><option value="1">1 · Tomate et viande</option><option value="2">2 · Salade et incendies</option><option value="3">3 · Wrap et sauce blanche</option></select>
+        <h2>0{level} / {level === 1 ? 'PREMIER COUP DE FEU' : level === 2 ? 'CHAUD DEVANT' : 'LE GRAND WRAP'} <time>03:00</time></h2>
+        <img className={s.map} src="/menu/kitchen.png" alt="Ambiance de la cuisine ; les comptoirs varient selon le niveau" />
           <div className={s.stars}>{rules.stars.map((score,i)=><div key={score}><span aria-label={`${i+1} étoiles`}>{Array.from({length:i+1},(_,j)=><img key={j} src="/menu/star.svg" alt="" />)}</span>{score.toLocaleString('fr-FR')} pts</div>)}</div>
       </section>
       <section className={s.selection}>
@@ -34,6 +35,6 @@ export function HomePage() {
       </section>
     </div>
     <nav className={s.actions} aria-label="Menu principal"><a href="#jouer">JOUER</a><a href="#regles">COMMENT JOUER</a><a href="#classement">CLASSEMENT</a></nav>
-    <footer>CHOP CHOP · Projet étudiant · 2026</footer>
+    <footer>{isLocalDemo() ? "ESSAI LOCAL · Sans compte · Scores dans cet onglet uniquement" : "CHOP CHOP · Projet étudiant · 2026"}</footer>
   </main>;
 }

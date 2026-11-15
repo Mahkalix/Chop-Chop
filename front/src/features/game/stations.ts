@@ -22,9 +22,13 @@ export function stationsForLevel(level: ServiceLevel): readonly KitchenStation[]
   if (level === 1) return stations;
   return [
     ...stations.map(station => station.kind === 'surface' && !station.preparation && station.id !== 'assembly'
-      ? { ...station, accepts: [...allItems, 'lettuce', 'extinguisher'] as const } : station),
+      ? { ...station, accepts: [...allItems, 'lettuce', 'extinguisher', ...(level === 3 ? ['tortilla', 'white-sauce'] as const : [])] as const } : station),
     { id: 'lettuce', kind: 'source', item: 'lettuce', texture: 'worktop', label: 'SALADE', x: 96, y: 300 },
     { id: 'extinguisher', kind: 'surface', accepts: ['extinguisher'], texture: 'worktop', label: 'EXTINCTEUR', x: 1150, y: 300 },
+    ...(level === 3 ? [
+      { id: 'tortilla', kind: 'source', item: 'tortilla', texture: 'worktop', label: 'GALETTES', x: 240, y: 612 },
+      { id: 'white-sauce', kind: 'source', item: 'white-sauce', texture: 'worktop', label: 'SAUCE BLANCHE', x: 816, y: 612 },
+    ] as const : []),
   ];
 }
 

@@ -22,5 +22,9 @@ export const LEVEL_TWO_RULES: ServiceRules = {
   patienceMs: [45_000, 40_000, 35_000] as readonly number[],
   stars: [700, 1_400, 2_200] as readonly number[],
 };
+export const LEVEL_THREE_RULES: ServiceRules = {
+  ...LEVEL_TWO_RULES, recipes: RECIPES_BY_LEVEL[3], orderIntervalMs: 10_000,
+  patienceMs: [40_000, 35_000, 30_000], stars: [900, 1_800, 2_600],
+};
 export const EXTINGUISH_MS = 3_000;
-export const getServiceRules = (level: ServiceLevel) => level === 2 ? LEVEL_TWO_RULES : LEVEL_ONE_RULES;
+export const getServiceRules = (level: ServiceLevel) => ({ 1: LEVEL_ONE_RULES, 2: LEVEL_TWO_RULES, 3: LEVEL_THREE_RULES })[level];

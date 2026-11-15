@@ -1,3 +1,4 @@
+import { isLocalDemo } from '../features/game/localDemo';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { PlayerGate } from '../features/auth/PlayerGate';
@@ -33,6 +34,7 @@ function AppContent() {
     heading.current?.focus();
   }, [route]);
   if (route === 'accueil') return <HomePage />;
+  if (route === 'jouer' && isLocalDemo()) return <Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense>;
   if (route === 'jouer') return <>
     <PlayerGate><Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense></PlayerGate>
   </>;
@@ -63,7 +65,7 @@ function Rules() {
   return <>
     <p>TON BUT : servir les bonnes assiettes avant la fin des 3 minutes.</p>
     <div className={styles.row}>
-      {[['Z Q S D ou ↑ ← ↓ →', 'Se déplacer'], ['E', 'Prendre / poser', 'Appui simple'], ['C', level === 2 ? 'Découper / éteindre' : 'Découper', 'Maintenir 3 secondes'], ['Esc', 'Pause']].map(([key, label, hint]) =>
+      {[['Z Q S D ou ↑ ← ↓ →', 'Se déplacer'], ['E', 'Prendre / poser', 'Appui simple'], ['C', level >= 2 ? 'Découper / éteindre' : 'Découper', 'Maintenir 3 secondes'], ['Esc', 'Pause']].map(([key, label, hint]) =>
         <section key={key}>{key === 'Z Q S D ou ↑ ← ↓ →' ? <div className={styles.movement}>{['ZQSD', '↑←↓→'].map((layout, i) => <span key={layout}>{i === 1 && <b>ou</b>}<span className={styles.keys}>{Array.from(layout, letter => <kbd key={letter}>{letter}</kbd>)}</span></span>)}</div> : <kbd>{key}</kbd>}<h3>{label}</h3>{hint}</section>
       )}
     </div>
@@ -73,10 +75,11 @@ function Rules() {
     )}</div>
     <div className={styles.row}>
       <section><h3>LES RECETTES DU NIVEAU {level}</h3>Tomate préparée : assiette + tomate découpée<br/>Viande grillée : assiette + viande cuite
-        {level === 2 && <><br/>Salade tomate : assiette + salade + tomate découpée<br/>Assiette complète : assiette + salade + tomate découpée + viande cuite<br/>La salade est prête à l’emploi. Pose une assiette sur un comptoir, puis ajoute les ingrédients un par un avec E, dans l’ordre de ton choix.</>}
+        {level >= 2 && <><br/>Salade tomate : assiette + salade + tomate découpée<br/>Assiette complète : assiette + salade + tomate découpée + viande cuite<br/>La salade est prête à l’emploi. Pose une assiette sur un comptoir, puis ajoute les ingrédients un par un avec E, dans l’ordre de ton choix.</>}
+      {level === 3 && <><br/>Wrap : assiette + galette + salade + tomate découpée + viande cuite + sauce blanche. La galette et la sauce sont prêtes à l’emploi, sans cuisson supplémentaire. Ajoute les cinq ingrédients un par un avec E.</>}
       </section>
       <section><h3>À RETENIR</h3>Un seul objet porté à la fois. Pose-le avant d’en prendre un autre.<br/>Viande : pose-la sur le feu, attends 8 s, puis récupère-la.<br/>Après 6 s de plus, elle brûle : −10 points et combo remis à 1.
-        {level === 2 ? <> Le grill prend feu et devient inutilisable. Prends l’extincteur sur son support, approche-toi du grill et maintiens C pendant 3 s. Repose l’extincteur, puis prends la viande brûlée et jette-la à la poubelle. Le grill est de nouveau disponible. Aucun malus supplémentaire.</> : <> Jette la viande brûlée à la poubelle.</>}</section>
+        {level >= 2 ? <> Le grill prend feu et devient inutilisable. Prends l’extincteur sur son support, approche-toi du grill et maintiens C pendant 3 s. Repose l’extincteur, puis prends la viande brûlée et jette-la à la poubelle. Le grill est de nouveau disponible. Aucun malus supplémentaire.</> : <> Jette la viande brûlée à la poubelle.</>}</section>
     </div>
   </>;
 }

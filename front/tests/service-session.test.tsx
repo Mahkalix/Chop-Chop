@@ -108,16 +108,16 @@ it('abandons on explicit confirmation and on unmount, never after normal complet
   expect(fetchMock.mock.calls.at(-1)![1].keepalive).toBe(true);
 });
 
-it('preserves level two from session creation through score submission', async () => {
-  fetchMock.mockResolvedValue(response({ gameId: 'run-2', levelId: 2, startedAt: new Date().toISOString() }, 201));
-  const { result } = renderHook(() => useServiceSession(2));
-  expect(result.current.service.levelId).toBe(2);
+it.each([2, 3] as const)('preserves level %s from session creation through score submission', async levelId => {
+  fetchMock.mockResolvedValue(response({ gameId: 'run-2', levelId, startedAt: new Date().toISOString() }, 201));
+  const { result } = renderHook(() => useServiceSession(levelId));
+  expect(result.current.service.levelId).toBe(levelId);
   result.current.scene.current = { startService: vi.fn(), setPaused: vi.fn() } as unknown as KitchenScene;
   await act(async () => { await result.current.start(); });
-  expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ levelId: 2 });
+  expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ levelId });
   fetchMock.mockResolvedValue(response(apiResult));
-  await act(async () => { result.current.finish({ ...finalService, levelId: 2 }); });
-  expect(result.current.service.levelId).toBe(2);
+  await act(async () => { result.current.finish({ ...finalService, levelId }); });
+  expect(result.current.service.levelId).toBe(levelId);
   expect(result.current.saved).toBe(true);
   expect(fetchMock.mock.calls[1]![0]).toContain('/run-2/finish');
 });

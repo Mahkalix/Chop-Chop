@@ -1,3 +1,4 @@
+import { isLocalDemo } from './localDemo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ServiceLevel, FinishGameResponse } from '@chopchop/shared';
 import { useAuth } from '../auth/AuthProvider';
@@ -29,6 +30,7 @@ export function useServiceSession(levelId: ServiceLevel = 1) {
     setPhaseState(next);
   }, []);
   const token = async () => {
+    if (isLocalDemo()) return 'local-demo';
     const response = await client?.auth.getSession();
     if (!response?.data.session || response.error) throw new Error('Reconnecte-toi pour lancer le service.');
     current.current.token = response.data.session.access_token;

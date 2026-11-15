@@ -21,7 +21,7 @@ Le [Project](https://github.com/users/Mahkalix/projects/3) indique les statuts e
 
 ## Sources et ordre de lecture
 
-1. Ce contexte et les décisions explicites prises ensuite par l'équipe. Le détail des décisions du 14 novembre 2026, avec leur justification, est dans `docs/CONTEXTE_GAMEPLAY_DECISIONS_2026-11-14.md` et `docs/CONTEXTE_CLASSEMENT_DECISIONS_2026-11-14.md`.
+1. Ce contexte et les décisions explicites prises ensuite par l’équipe. Les décisions sont conservées directement ici ; ne pas renvoyer à des fichiers de décisions absents du dépôt.
 2. Le code de la branche réellement utilisée, ses tests, migrations et contrats partagés, pour savoir ce qui fonctionne déjà.
 3. L'issue de la tâche et les PR qui modifient la même zone, pour le travail en cours.
 4. Le [Figma CHOP-CHOP](https://www.figma.com/design/5YyQNON3zicZCKuN1CkEH0/Chop-Chop?node-id=0-1&p=f&t=NicH7XWej9pK7hHY-0) pour les parcours et l'interface. La page MAQUETTE montre notamment Accueil, Chargement, début du service, Service en cours, Temps écoulé, Résultats, Comment jouer, Pause et abandon, et Classement. Vérifier les mesures et interactions dans Figma avant de les implémenter.
@@ -30,6 +30,8 @@ Le [Project](https://github.com/users/Mahkalix/projects/3) indique les statuts e
 Si deux sources se contredisent, consigner l'écart dans la PR ou l'issue et demander une décision produit avant de modifier une règle métier. Ne pas transformer une proposition ancienne en comportement obligatoire.
 
 ## État de cette copie du dépôt
+
+**Regroupement local #85, branche `feat/85-niveaux-1-2-3`, 15 novembre 2026 :** les niveaux #63, #64 et #65 sont réunis pour essai avant PR. Le niveau 3 conserve les quatre recettes du niveau 2 et ajoute le wrap : galette prête, salade, tomate découpée, viande cuite et sauce blanche sur assiette, sans cuisson du wrap. Comptoirs galette/sauce, feu et extincteur présents. Cadence 10 s, patience 40/35/30 s, étoiles indicatives 900/1800/2600. `pnpm dev:demo` lance les trois niveaux sans compte ni API, avec scores locaux à l’onglet ; le mode normal reste disponible. Voir `docs/local-levels.md` pour le lancement et les 216 tests, dont le parcours navigateur complet du niveau 3. Les notes de prototype ci-dessous sont historiques et ne remplacent pas ces règles confirmées.
 
 **Travail local #64, branche `feat/64-level-2`, 15 novembre 2026 :** sur la base du niveau 1 (`e6e43e8`), le niveau 2 ajoute salade prête à l’emploi, salade tomate, assiette complète et assemblages libres. La viande brûle à 14 secondes, déclenche un feu local et bloque le grill ; extinction avec l’extincteur et C maintenue pendant 3 secondes, puis évacuation de la viande brûlée. Malus unique de 10 points. Le choix du niveau accompagne lancement, règles et classement. Voir `docs/level-2.md` pour les paramètres, les 205 tests et le parcours navigateur de 180 secondes avec services simulés. Les règles héritées ci-dessous décrivent encore en partie l’ancien prototype ; la réconciliation Docusaurus #81 reste séparée.
 

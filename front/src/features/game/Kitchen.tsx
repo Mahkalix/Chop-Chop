@@ -67,6 +67,6 @@ export default function Kitchen() {
         </div>
       </div>}
     </section>
-    <p className={styles.hint}>ZQSD ou flèches : BOUGER · ESPACE : BONDIR · E : PRENDRE / POSER · C maintenue : DÉCOUPER{levelId === 2 ? ' / ÉTEINDRE' : ''}</p>
+    <p className={styles.hint}>ZQSD ou flèches : BOUGER · ESPACE : BONDIR · E : PRENDRE / POSER · C maintenue : DÉCOUPER{levelId >= 2 ? ' / ÉTEINDRE' : ''}</p>
   </main>, document.body);
 }
