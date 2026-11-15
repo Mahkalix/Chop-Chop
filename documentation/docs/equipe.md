@@ -13,7 +13,7 @@ Notre défi : construire en **deux jours** un petit jeu web de cuisine en solo, 
 | Membre | Responsabilités |
 | --- | --- |
 | **Sabrina** | Cheffe de projet et développeuse : pilotage du projet et participation au développement. |
-| **Melissa (Mel)** | Responsable back : développement et suivi du back-end. |
+| **Melissa** | Responsable back : développement et suivi du back-end. |
 | **Maxence** | Développeuse front et responsable UX : interface et expérience utilisateur. |
 | **Valérie** | Base de données et back : structure des données et développement back-end. |
 
