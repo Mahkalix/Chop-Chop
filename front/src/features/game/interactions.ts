@@ -1,11 +1,11 @@
-import type { Ingredient as SharedIngredient, ItemKind as SharedItemKind } from '@chopchop/shared';
+import { LEVEL_ONE_RULES, matchRecipe, type Ingredient as SharedIngredient, type ItemKind as SharedItemKind } from '@chopchop/shared';
 
 /** Local inventory types used by kitchen interactions and preparation. */
 export type ItemKind = SharedItemKind;
 export type Item =
   | (Extract<SharedIngredient, { kind: 'tomato' }> & { readonly id: number; readonly cutMs: number })
   | (Extract<SharedIngredient, { kind: 'meat' }> & { readonly id: number; readonly cookMs: number })
-  | { readonly id: number; readonly kind: 'plate' };
+  | { readonly id: number; readonly kind: 'plate'; readonly contents: readonly SharedIngredient[] };
 export type Station =
   | { readonly id: string; readonly kind: 'source'; readonly item: ItemKind }
   | { readonly id: string; readonly kind: 'surface'; readonly accepts: readonly ItemKind[]; readonly preparation?: 'chop' | 'cook' }
@@ -22,13 +22,14 @@ export type InteractionResult = { readonly inventory: Inventory; readonly messag
 export function describeItem(item: Item): string {
   if (item.kind === 'tomato') return item.state === 'chopped' ? 'Tomate découpée' : 'Tomate';
   if (item.kind === 'meat') return { raw: 'Viande crue', cooked: 'Viande cuite', burnt: 'Viande brûlée' }[item.state];
-  return 'Assiette';
+  if (!item.contents.length) return 'Assiette vide';
+  return item.contents[0]?.kind === 'tomato' ? 'Assiette de tomate préparée' : 'Assiette de viande grillée';
 }
 
 function createItem(id: number, kind: ItemKind): Item {
   if (kind === 'tomato') return { id, kind, state: 'raw', cutMs: 0 };
   if (kind === 'meat') return { id, kind, state: 'raw', cookMs: 0 };
-  return { id, kind };
+  return { id, kind, contents: [] };
 }
 
 export function createInventory(): Inventory {
@@ -51,9 +52,16 @@ export function interact(inventory: Inventory, station: Station): InteractionRes
     if (!carried) return unchanged('Tu n’as rien à jeter.');
     return { inventory: { ...inventory, carried: null, discarded: inventory.discarded + 1 }, message: 'Objet jeté.' };
   }
-  if (station.kind === 'delivery') return unchanged('La livraison sera disponible avec les recettes et les commandes.');
+  if (station.kind === 'delivery') return unchanged('Apporte une assiette correspondant à une commande.');
   const placed = inventory.surfaces[station.id] ?? null;
   if (carried) {
+    if (placed?.kind === 'plate' && carried.kind !== 'plate' && !station.preparation) {
+      const contents = [...placed.contents, { kind: carried.kind, state: carried.state } as SharedIngredient];
+      const recipe = matchRecipe(contents);
+      if (!recipe || !LEVEL_ONE_RULES.recipes.includes(recipe)) return unchanged('Cet ingrédient ne complète pas une recette du niveau 1.');
+      return { inventory: { ...inventory, carried: null, surfaces: { ...inventory.surfaces, [station.id]: { ...placed, contents } } },
+        message: 'Assiette prête ! Reprends-la avec E puis apporte-la au poste SERVIR.' };
+    }
     if (placed) return unchanged('Ce poste est occupé. Choisis un emplacement libre.');
     if (!station.accepts.includes(carried.kind)) return unchanged('Cet objet ne peut pas être posé sur ce poste.');
     return {

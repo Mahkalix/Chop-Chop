@@ -4,14 +4,36 @@ import { stations, closestStation } from './stations';
 import { createInventory, interact, describeItem, type Item, type Inventory } from './interactions';
 
 import { advancePreparation, getPreparationProgress, type PreparationProgress } from './preparation';
+import { advanceService, createService, deliver, penalizeBurns } from './service';
+import { LEVEL_ONE_RULES } from '@chopchop/shared';
 
-const textureOf = (item: Item) => 'item-' + (item.kind === 'tomato' ? (item.state === 'chopped' ? 'chopped' : 'whole') : item.kind === 'meat' && item.state !== 'raw' ? item.state : item.kind);
+const textureOf = (item: Item) => item.kind === 'plate' && item.contents.length
+  ? `dish-${item.contents[0]!.kind}`
+  : 'item-' + (item.kind === 'tomato' ? (item.state === 'chopped' ? 'chopped' : 'whole') : item.kind === 'meat' && item.state !== 'raw' ? item.state : item.kind);
 
 export type InteractionStatus = { carried: string | null; target: string | null; message: string; preparation: PreparationProgress | null };
 
 const chefs = ['Miso', 'Pipa', 'Basile', 'Alba', 'Nori', 'Gaspard'];
 
 export class KitchenScene extends Phaser.Scene {
+  service = createService();
+  private running = false;
+  private lastServiceAt = 0;
+
+  startService() {
+    this.running = true;
+    this.input.keyboard?.enableGlobalCapture();
+    this.game.events.emit('service-update', this.service);
+  }
+
+  setPaused(paused: boolean) {
+    this.running = !paused && !this.service.ended;
+    this.player?.setVelocity(0);
+    this.dashUntil = 0;
+    this.input.keyboard?.resetKeys();
+    if (this.running) this.input.keyboard?.enableGlobalCapture();
+    else this.input.keyboard?.disableGlobalCapture();
+  }
   private inventory: Inventory = createInventory();
   private interactionKey!: Phaser.Input.Keyboard.Key;
   private targetId: string | null = null;
@@ -50,6 +72,12 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   create() {
+    for (const [kind, ingredient] of [['tomato', 'chopped'], ['meat', 'cooked']]) {
+      const texture = this.add.renderTexture(0, 0, 128, 96).setVisible(false);
+      texture.draw(this.add.image(0, 0, 'item-plate').setDisplaySize(112, 80).setVisible(false), 64, 48);
+      texture.draw(this.add.image(0, 0, `item-${ingredient}`).setDisplaySize(60, 44).setVisible(false), 64, 42);
+      texture.saveTexture(`dish-${kind}`);
+    }
     this.inventory = createInventory();
     this.lastStatus = '';
     this.lastProgressAt = 0;
@@ -81,8 +109,10 @@ export class KitchenScene extends Phaser.Scene {
     this.player.setVisible(false);
     this.portrait = this.add.image(this.player.x, this.player.y, 'chef').setDisplaySize(128, 160).setDepth(20);
     const camera = this.cameras.main;
-    camera.setBounds(0, 0, 1440, 900).startFollow(this.player);
-    const fitCamera = () => camera.setZoom(Math.max(this.scale.width / 1440, this.scale.height / 900));
+    const fitCamera = () => {
+      camera.setZoom(Math.min(this.scale.width / 1440, this.scale.height / 900));
+      camera.centerOn(720, 450);
+    };
     fitCamera();
     this.scale.on(Phaser.Scale.Events.RESIZE, fitCamera);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.scale.off(Phaser.Scale.Events.RESIZE, fitCamera));
@@ -94,6 +124,7 @@ export class KitchenScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.interactionKey.off('down', this.useClosestStation, this));
     this.placedItems.clear();
     this.cutKey = keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.C);
+    keyboard.disableGlobalCapture();
     this.knife = this.add.image(0, 0, 'knife').setOrigin(.13, .45);
     this.restKnife();
     this.choppingCloud = this.add.graphics().setDepth(15);
@@ -101,9 +132,22 @@ export class KitchenScene extends Phaser.Scene {
     this.burningFlames = this.add.graphics().setDepth(14);
     this.carriedItem = this.add.image(0, 0, 'item-whole').setScale(.72).setVisible(false).setDepth(22);
     this.publishStatus(null, 'Approche-toi d’un poste puis appuie sur E.');
+    this.game.events.emit('kitchen-ready', this);
   }
 
   update(time: number, delta: number) {
+    if (!this.running) { this.player.setVelocity(0); return; }
+    const activeDelta = Math.min(delta, LEVEL_ONE_RULES.durationMs - this.service.elapsedMs);
+    if (activeDelta >= LEVEL_ONE_RULES.durationMs - this.service.elapsedMs) {
+      this.service = advanceService(this.service, activeDelta);
+      this.running = false;
+      this.input.keyboard?.disableGlobalCapture();
+      this.player.setVelocity(0);
+      this.game.events.emit('service-update', this.service);
+      this.game.events.emit('service-ended', this.service);
+      return;
+    }
+    this.service = advanceService(this.service, activeDelta);
     const horizontal = Number(this.arrows.right.isDown || this.letters.D.isDown)
       - Number(this.arrows.left.isDown || this.letters.Q.isDown);
     const vertical = Number(this.arrows.down.isDown || this.letters.S.isDown)
@@ -129,12 +173,20 @@ export class KitchenScene extends Phaser.Scene {
       this.stationSprites.get(this.targetId ?? '')?.setTint(0xffe293);
       this.publishStatus(target, target ? 'E : prendre, poser ou utiliser ce poste.' : 'Approche-toi d’un poste pour interagir.');
     }
-    this.updatePreparation(target, time, delta);
+    this.updatePreparation(target, time, activeDelta);
+    if (time - this.lastServiceAt >= 100) {
+      this.lastServiceAt = time;
+      this.game.events.emit('service-update', this.service);
+    }
   }
 
   private updatePreparation(target: (typeof stations)[number] | null, time: number, delta: number) {
     const cuttingStation = this.cutKey.isDown ? target?.id ?? null : null;
     const result = advancePreparation(this.inventory, delta, cuttingStation);
+    const burns = Object.entries(result.inventory.surfaces).filter(([id, item]) => item?.kind === 'meat'
+      && item.state === 'burnt' && (this.inventory.surfaces[id]?.kind !== 'meat'
+      || (this.inventory.surfaces[id] as Extract<Item, { kind: 'meat' }>).state !== 'burnt')).length;
+    this.service = penalizeBurns(this.service, burns);
     this.inventory = result.inventory;
     this.choppingCloud.clear();
     this.restKnife();
@@ -213,10 +265,16 @@ export class KitchenScene extends Phaser.Scene {
   }
 
   private useClosestStation() {
+    if (!this.running || this.service.ended) return;
     const feet = (this.player.body as Phaser.Physics.Arcade.Body).center;
     const target = closestStation(feet.x, feet.y);
     if (!target) { this.publishStatus(null, 'Tu es trop loin d’un poste.'); return; }
-    const result = interact(this.inventory, target);
+    const delivery = target.kind === 'delivery' ? deliver(this.service, this.inventory) : null;
+    const result = delivery ?? interact(this.inventory, target);
+    if (delivery) {
+      this.service = delivery.service;
+      this.game.events.emit('service-update', this.service);
+    }
     this.inventory = result.inventory;
     this.drawItems();
     this.publishStatus(target, result.message);

@@ -34,7 +34,6 @@ function AppContent() {
   if (route === 'accueil') return <HomePage />;
   if (route === 'jouer') return <>
     <PlayerGate><Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense></PlayerGate>
-    <a className={styles.back} href="#accueil">RETOUR À L’ACCUEIL</a>
   </>;
   const backLabel = route === 'regles' ? 'COMPRIS, RETOUR' : 'RETOUR';
   return (
@@ -71,7 +70,7 @@ function Rules() {
       <section key={title}><h3>{title}</h3><p>{body}</p></section>
     )}</div>
     <div className={styles.row}>
-      <section><h3>LES 3 RECETTES</h3>Tomate : assiette + tomate découpée<br/>Viande : assiette + viande cuite<br/>Mixte : assiette + tomate découpée + viande cuite</section>
+      <section><h3>LES 2 RECETTES DU NIVEAU 1</h3>Tomate préparée : assiette + tomate découpée<br/>Viande grillée : assiette + viande cuite</section>
       <section><h3>À RETENIR</h3>Un seul objet porté à la fois. Pose-le avant d’en prendre un autre.<br/>Viande : pose-la sur le feu, attends 8 s, puis récupère-la.<br/>Après 6 s de plus, elle brûle : direction la poubelle.</section>
     </div>
   </>;

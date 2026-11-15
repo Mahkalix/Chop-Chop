@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { LEVEL_ONE_RULES } from '@chopchop/shared';
 import s from './Selection.module.scss';
 
 const chefs = ['Miso','Pipa','Basile','Alba','Nori','Gaspard'];
@@ -14,7 +15,7 @@ export function HomePage() {
     <div className={s.columns}>
       <section className={s.level}><h2>01 / PREMIER COUP DE FEU <time>03:00</time></h2>
         <img className={s.map} src="/menu/kitchen.png" alt="Aperçu de la cuisine du premier service" />
-        <div className={s.stars}>{['300','600','1 000'].map((score,i)=><div key={score}><span aria-label={`${i+1} étoiles`}>{Array.from({length:i+1},(_,j)=><img key={j} src="/menu/star.svg" alt="" />)}</span>{score} pts</div>)}</div>
+          <div className={s.stars}>{LEVEL_ONE_RULES.stars.map((score,i)=><div key={score}><span aria-label={`${i+1} étoiles`}>{Array.from({length:i+1},(_,j)=><img key={j} src="/menu/star.svg" alt="" />)}</span>{score.toLocaleString('fr-FR')} pts</div>)}</div>
       </section>
       <section className={s.selection}>
         <label>Ton prénom ou pseudo<input placeholder="Ex. Alex" value={name} maxLength={16} onChange={e=>{setName(e.target.value);sessionStorage.setItem('pseudo',e.target.value);}} /></label>

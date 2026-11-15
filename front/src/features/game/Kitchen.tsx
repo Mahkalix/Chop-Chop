@@ -3,12 +3,24 @@ import { createPortal } from 'react-dom';
 import Phaser from 'phaser';
 import { KitchenScene, type InteractionStatus } from './KitchenScene';
 import styles from './Kitchen.module.scss';
+import { ServiceHud } from './ServiceHud';
+import { ServiceOverlay } from './ServiceOverlay';
+import { useServiceSession } from './useServiceSession';
+import type { Service } from './service';
 
 export default function Kitchen() {
   const mount = useRef<HTMLDivElement>(null);
+  const session = useServiceSession();
+  const actions = useRef(session);
+  actions.current = session;
+  const [ready, setReady] = useState(false);
   const [status, setStatus] = useState<InteractionStatus>({ carried: null, target: null, message: 'Approche-toi d’un poste puis appuie sur E.', preparation: null });
   useEffect(() => {
     let game: Phaser.Game | undefined;
+    // The portal owns the full screen; underlying auth controls must not receive focus.
+    const root = document.getElementById('root');
+    const wasInert = root?.inert ?? false;
+    if (root) root.inert = true;
     // Defer creation so StrictMode can clean up its first effect before Phaser boots.
     const frame = requestAnimationFrame(() => {
       game = new Phaser.Game({
@@ -21,22 +33,27 @@ export default function Kitchen() {
         scene: KitchenScene,
       });
       game.events.on('kitchen-interaction', setStatus);
+      game.events.on('kitchen-ready', (scene: KitchenScene) => { actions.current.scene.current = scene; setReady(true); });
+      game.events.on('service-update', (service: Service) => actions.current.setService(service));
+      game.events.on('service-ended', (service: Service) => actions.current.finish(service));
     });
     return () => {
       cancelAnimationFrame(frame);
       game?.events.off('kitchen-interaction', setStatus);
       game?.destroy(true);
+      if (root) root.inert = wasInert;
     };
   }, []);
   return createPortal(<main className={styles.kitchen} aria-label="Cuisine du premier service">
-    <div className={styles.canvas} ref={mount} />
-    <a className={styles.exit} href="#accueil">RETOUR À L’ACCUEIL</a>
+    <div className={styles.canvas} ref={mount} style={{ visibility: session.phase === 'running' ? 'visible' : 'hidden' }} />
+    {session.phase === 'running' && <ServiceHud service={session.service} onPause={session.pause} />}
+    <ServiceOverlay session={session} ready={ready} />
     {document.fullscreenEnabled && <button className={styles.fullscreen} onClick={event => {
       const frame = event.currentTarget.closest('main');
       if (document.fullscreenElement) void document.exitFullscreen();
       else if (frame) void frame.requestFullscreen().catch(() => {});
     }}>PLEIN ÉCRAN</button>}
-    <section className={styles.inventory} aria-label="Objet porté">
+    <section className={styles.inventory} aria-label="Objet porté" hidden={session.phase !== 'running'}>
       <strong>EN MAIN : {status.carried ?? 'Rien'}</strong>
       <p>{status.target ? `POSTE : ${status.target}` : 'Approche-toi d’un poste.'}</p>
       <p role="status">{status.message}</p>
