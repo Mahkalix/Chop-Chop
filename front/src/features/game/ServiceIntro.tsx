@@ -32,4 +32,3 @@ export function ServiceIntro({ ready, progress, level, error, start }: Props) {
     </div>
   </section>;
 }
-
