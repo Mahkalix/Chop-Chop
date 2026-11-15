@@ -1,0 +1,127 @@
+.main {width: min(1180px, calc(100% - 2.5rem)); margin: 2.4rem auto 4rem;}
+.hero {color: #f7f1e5; background: #21251d; border-bottom: 6px solid #ba5036; padding: clamp(1.35rem, 4vw, 2.6rem); display: grid; gap: .65rem;}
+.hero h1 {color: inherit; font-size: clamp(1.25rem, 3.3vw, 2.4rem); margin: 0; overflow-wrap: anywhere;}
+.hero p {max-width: 70ch; margin: 0;}
+.hero small {color: #e2d8c4;}
+.hero a {color: #ffdbb1; text-decoration: underline;}
+.links {display: flex; flex-wrap: wrap; gap: .45rem 1rem; align-items: center;}
+.jump {margin: 1rem 0 1.8rem; padding: .6rem 0; border-bottom: 1px solid var(--chop-line);}
+.jump a {font-weight: 700; padding-block: .2rem;}
+.section {margin-block: 2.6rem; scroll-margin-top: 5rem;}
+.section h2 {font-size: clamp(1rem, 2.2vw, 1.3rem);}
+.section h3 {font-family: var(--ifm-font-family-base); font-weight: 700; font-size: 1.15rem; margin-block: 1rem .45rem;}
+.section p {margin-bottom: .65rem;}
+.filters {border: 1px solid var(--chop-line); border-left: 4px solid var(--chop-brick); padding: 1rem; margin-bottom: 1.25rem;}
+.filters legend {padding-inline: .5rem; font-weight: 700;}
+.controls {display: flex; align-items: flex-end; flex-wrap: wrap; gap: .65rem;}
+.controls > label, .field {display: grid; gap: .2rem; font-size: .9rem; flex: 1 1 9rem; min-width: 0;}
+.controls select, .controls input, .controls button, .action {min-height: 2.6rem; max-width: 100%; font: inherit; padding: .3rem .5rem; color: var(--chop-ink); background: var(--chop-cream); border: 1px solid var(--chop-line);}
+.controls select, .controls input {width: 100%; min-width: 0;}
+.controls button, .action {cursor: pointer; font-weight: 700;}
+.controls :focus-visible, .action:focus-visible {outline: 3px solid var(--chop-brick); outline-offset: 3px;}
+.metricGrid {display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr)); gap: .75rem;}
+.metric {border: 1px solid var(--chop-line); padding: .75rem; background: var(--chop-sand);}
+.metric strong {display: block; font-size: clamp(1.35rem, 3vw, 2.15rem); line-height: 1.25;}
+.metric small {display: block; line-height: 1.35; margin-top: .2rem;}
+.panel {border: 1px solid var(--chop-line); padding: 1rem; min-width: 0;}
+.panel h3:first-child {margin-top: 0;}
+.panel summary {cursor: pointer; font-weight: 700;}
+.two {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; margin-block: .85rem;}
+.charts {display: grid; gap: .5rem; list-style: none; margin: .65rem 0; padding: 0;}
+.chartRow {display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(4rem, 1fr) auto; align-items: center; gap: .55rem;}
+.track {position: relative; background: var(--chop-sand); height: .7rem;}
+.bar {position: absolute; height: 100%; min-width: 0; background: var(--chop-brick);}
+.ended {background: #48745c;}
+.planned {background: #376992;}
+.pending {background: #925f25;}
+.marker {position: absolute; top: -.15rem; width: 3px; height: 1rem; background: var(--chop-ink);}
+.reviewMarker {background: #526ec0;}
+.changeMarker {background: #bc6522;}
+.milestones {display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 195px), 1fr)); gap: .7rem; list-style: none; padding: 0; margin: 0;}
+.milestones li {border-top: 3px solid var(--chop-brick); background: var(--chop-sand); padding: .8rem; break-inside: avoid;}
+.milestones li h3 {margin-top: .3rem;}
+.table {display: block; width: 100%; overflow-x: auto; margin: .8rem 0; font-size: .87rem;}
+.table th, .table td {text-align: left; vertical-align: middle; padding: .48rem .65rem;}
+.table th {background: var(--chop-sand);}
+.timeline {min-width: 11rem;}
+.timeline .track + .track {margin-top: .18rem;}
+.status {font-size: .85rem;}
+.muted {font-size: .9rem;}
+@media (max-width: 740px) {
+  .main {width: calc(100% - 1.25rem); margin-top: 1.2rem;}
+  .two {grid-template-columns: 1fr;}
+  .chartRow {grid-template-columns: minmax(6rem, 1fr) minmax(2.5rem, 1fr) auto;}
+}
+@media print {
+  .main {width: 100%; margin: 0;}
+  .hero, .metric, .milestones li, .panel {color: #171510; background: white;}
+  .hero h1, .hero a, .hero small {color: #171510;}
+  .hero {padding: 0 0 .5rem;}
+  .jump, .filters, .action, :global(.navbar), :global(.footer) {display: none !important;}
+  .section {margin-block: 1.1rem;}
+  .table {font-size: .73rem;}
+  .metric, .chartRow, .table tr, .panel h3 {break-inside: avoid;}
+  .track, .bar, .marker {print-color-adjust: exact;}
+}
+
+.legend {display: flex; flex-wrap: wrap; gap: .35rem 1rem; font-size: .88rem; margin-top: .6rem;}
+.legend i, .labelName i {display: inline-block; width: .75rem; height: .75rem; border: 1px solid var(--chop-line);}
+.openSwatch {background: #925f25;}
+.closedSwatch {background: #48745c;}
+.stacked {display: flex;}
+.stacked span {height: 100%;}
+.labelRow {grid-template-columns: minmax(10rem, 1fr) minmax(3rem, 2fr) minmax(12rem, 1.15fr);}
+.labelName {display: flex; align-items: center; gap: .4rem; min-width: 0;}
+.labelName i {flex: 0 0 .75rem;}
+.labelName :is(button, a) {overflow-wrap: anywhere;}
+.labelName button {text-align: left; padding: .25rem; color: var(--ifm-color-primary); cursor: pointer; font: inherit; background: transparent; border: 1px solid transparent;}
+.labelName button:hover, .labelName button[aria-pressed='true'] {border-color: var(--chop-line); background: var(--chop-sand);}
+.labelValue {font-size: .88rem;}
+.summary .labelRow {grid-template-columns: minmax(7rem, 1fr) minmax(3rem, 1fr) auto;}
+.summary {margin-top: 1.25rem;}
+.summary .hero {padding-block: 1.1rem; gap: .4rem;}
+.summary .hero h1 {font-size: clamp(1.25rem, 3vw, 2rem);}
+.summary .section {margin-block: 1.55rem;}
+.summary .chartRow {line-height: 1.45;}
+.delays {padding-inline-start: 1.4rem; margin: 0;}
+.delays li {margin-block: .35rem;}
+.delays li strong {display: inline-block; min-width: 4.5em; margin-inline-end: .4rem;}
+@media (max-width: 600px) {
+  .labelRow {grid-template-columns: minmax(5rem, 1fr) minmax(2.5rem, 1fr);}
+  .labelValue {grid-column: 1 / -1; margin-left: 1.15rem;}
+  .summary .labelValue {grid-column: auto; margin-left: 0;}
+}
+@media print {
+  .legend i, .stacked span {print-color-adjust: exact;}
+  .summary .hero {padding-block: 0 .5rem;}
+  .summary .two {grid-template-columns: repeat(2, minmax(0, 1fr));}
+  .summary .panel {break-inside: avoid;}
+}
+
+.chartFilter {font: inherit; color: var(--ifm-color-primary); background: transparent; border: 1px solid transparent; padding: .15rem .35rem; text-align: left; cursor: pointer;}
+.chartFilter[aria-pressed='true'] {font-weight: 700; border-color: var(--chop-line); background: var(--chop-sand);}
+.chartFilter:disabled {color: var(--chop-ink); opacity: .72; cursor: default;}
+.graphControls {display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.5rem; margin-block: .75rem;}
+.graphControls p {margin: 0;}
+.graphControls input {margin: 0; vertical-align: middle; accent-color: var(--chop-brick);}
+.graph, .graphSources {margin: 0; padding: 0; list-style: none;}
+.graph {display: grid; gap: .75rem;}
+.graphGroup {display: grid; grid-template-columns: minmax(0, 1fr) clamp(1rem, 5vw, 3rem) minmax(0, 1fr); align-items: center; padding: clamp(.6rem, 2vw, 1.25rem); border: 1px solid var(--chop-line); break-inside: avoid;}
+.graphColumn {display: block; font-size: .8rem; font-weight: 700; margin-bottom: .25rem;}
+.graphSources li {position: relative; display: grid; grid-template-columns: minmax(0, 1fr) clamp(.6rem, 3vw, 2rem); align-items: center; padding-block: .25rem;}
+.graphSources li:not(:only-child)::after {content: ''; position: absolute; right: 0; inset-block: 0; border-right: 2px solid var(--chop-line);}
+.graphSources li:first-child::after {top: 50%;}
+.graphSources li:last-child::after {bottom: 50%;}
+.graphBranch, .graphArrow {border-top: 2px solid var(--chop-line);}
+.graphArrow {position: relative; align-self: center; margin-top: 1.6rem;}
+.graphArrow::after {content: ''; position: absolute; right: 1px; top: -5px; width: .45rem; height: .45rem; border: solid var(--chop-line); border-width: 2px 2px 0 0; transform: rotate(45deg);}
+.graphNode {display: grid; align-content: center; gap: .1rem; padding: .55rem .7rem; border: 1px solid var(--chop-line); background: var(--chop-sand); line-height: 1.4; overflow-wrap: anywhere;}
+.graphNode small {font-size: .78rem;}
+.graphNode a {font-weight: 700;}
+.graphHighlighted {border-left: 4px solid var(--chop-brick);}
+@media (max-width: 440px) {
+  .graphNode {padding: .4rem; font-size: .87rem;}
+}
+@media print {
+  .graphControls label {display: none;}
+}
