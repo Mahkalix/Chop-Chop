@@ -1,4 +1,4 @@
-import { INGREDIENT_STATES, PHASES, PREPARATIONS, RECIPES } from "@chopchop/shared";
+import { INGREDIENT_STATES, PHASES, PREPARATIONS, RECIPES, RECIPES_BY_LEVEL } from "@chopchop/shared";
 import { describe, expect, it } from "vitest";
 import { buildApp } from "../src/app.js";
 import type { Repository } from "../src/repository.js";
@@ -16,6 +16,7 @@ describe("GET /recipes", () => {
       preparations: PREPARATIONS,
       recipes: RECIPES,
       phases: PHASES,
+      levels: RECIPES_BY_LEVEL,
     });
   });
 });

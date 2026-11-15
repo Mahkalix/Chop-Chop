@@ -1,0 +1,7 @@
+.picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 760px; margin: 0 auto 18px; }
+.picker button { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 8px 12px; border: 2px solid #1f1814; background: #f7f1e6; color: #1f1814; cursor: pointer; text-align: left; }
+.picker.picker button span { font: 700 26px 'Pixelify Sans', monospace; }
+.picker.picker button strong { font: 600 12px/1.25 Inter, sans-serif; }
+.picker button[aria-pressed='true'] { color: #f7f1e6; background: #922f1f; box-shadow: 3px 3px #1f1814; }
+.picker button:hover:not([aria-pressed='true']) { background: #e8dcc6; }
+.picker button:focus-visible { outline: 3px solid #1f1814; outline-offset: 3px; }

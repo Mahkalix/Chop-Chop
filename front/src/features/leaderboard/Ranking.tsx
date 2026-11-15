@@ -1,7 +1,10 @@
+import { LevelPicker } from '../home/LevelPicker';
+import { isLocalDemo } from '../game/localDemo';
 import { useEffect, useState } from 'react';
 import type { LeaderboardEntry, LeaderboardResponse } from '@chopchop/shared';
 import { fetchLeaderboard } from './api';
 import styles from './Ranking.module.scss';
+import { readSelectedLevel } from '../game/levelSelection';
 
 type Result =
   | { status: 'loading' }
@@ -9,7 +12,7 @@ type Result =
   | { status: 'error'; message: string };
 
 export function Ranking() {
-  if (!import.meta.env.VITE_API_URL?.trim()) {
+  if (!isLocalDemo() && !import.meta.env.VITE_API_URL?.trim()) {
     return <section className={styles.upcoming} aria-labelledby="ranking-soon">
       <img src="/menu/star.svg" alt="" width="48" height="48" />
       <h2 id="ranking-soon">Classement indisponible</h2>
@@ -20,7 +23,7 @@ export function Ranking() {
 }
 
 function LiveRanking() {
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState<number>(readSelectedLevel);
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Result>({ status: 'loading' });
 
@@ -45,11 +48,8 @@ function LiveRanking() {
   }
 
   return <section className={styles.ranking} aria-label="Classement par niveau">
-    <label htmlFor="ranking-level">NIVEAU </label>
-    <select id="ranking-level" value={level} onChange={event => changeLevel(Number(event.target.value))}>
-      {[1, 2, 3].map(id => <option key={id} value={id}>Niveau {id}</option>)}
-    </select>
-    <h2 className={styles.title}>TOP 5 · LES AS DU FOURNEAU</h2>
+    <LevelPicker value={level} onChange={changeLevel} />
+    <h2 className={styles.title}>{isLocalDemo() ? "TOP 5 LOCAL · CET ONGLET UNIQUEMENT" : "TOP 5 · LES AS DU FOURNEAU"}</h2>
     <div aria-live="polite" aria-busy={result.status === 'loading'}>
       {result.status === 'loading' && <p>Chargement du classement…</p>}
       {result.status === 'error' && <>

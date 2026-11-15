@@ -1,6 +1,6 @@
 # CHOP-CHOP
 
-CHOP-CHOP est un jeu web de cuisine solo, jouable au clavier sur ordinateur. L'équipe prévoit **trois niveaux** et un classement par niveau. La priorité est de rendre le niveau 1 jouable de bout en bout, de la connexion au résultat classé.
+CHOP-CHOP est un jeu web de cuisine solo, jouable au clavier sur ordinateur. Cette branche propose **trois niveaux jouables** : tomate/viande, salade/assemblages/incendies, puis wrap et sauce blanche.
 
 ## Sites en ligne
 
@@ -9,9 +9,18 @@ CHOP-CHOP est un jeu web de cuisine solo, jouable au clavier sur ordinateur. L'�
 | Front, prototype actuel | [Ouvrir le front](https://chop-chop-front.vercel.app/) | [Voir le projet Vercel](https://vercel.com/mahkalixs-projects/chop-chop-front) |
 | Documentation Docusaurus | [Lire la documentation](https://chop-chop-docs.vercel.app/) | [Voir le projet Vercel](https://vercel.com/mahkalixs-projects/chop-chop-docs) |
 
-La partie complète reste à intégrer au front.
+Les liens en ligne ne reflètent pas encore nécessairement cette branche locale.
 
-## En local
+## Tester les trois niveaux sans compte
+
+```sh
+pnpm install --frozen-lockfile
+pnpm dev:demo
+```
+
+Ouvrir l’adresse affichée par Vite et choisir le niveau. **ESSAI LOCAL** : aucun compte ni service distant requis ; scores conservés uniquement dans cet onglet, jamais envoyés au classement partagé. Le mode local est désactivé en production. [Règles, limites et vérifications](docs/local-levels.md).
+
+## En local avec les vrais services
 
 Prérequis : **Node.js 22+** et **pnpm 11** pour le jeu. Les liens `localhost` fonctionnent pendant que les serveurs sont lancés.
 

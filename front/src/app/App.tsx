@@ -1,7 +1,12 @@
+import { getServiceRules, RECIPES } from '@chopchop/shared';
+import { DishArt } from '../features/game/DishArt';
+import { ingredientArt, ingredientNames } from '../features/game/recipePresentation';
+import { isLocalDemo } from '../features/game/localDemo';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { PlayerGate } from '../features/auth/PlayerGate';
 import { Ranking } from '../features/leaderboard/Ranking';
+import { readSelectedLevel } from '../features/game/levelSelection';
 import { HomePage } from '../features/home/HomePage';
 import styles from '../features/home/HomePage.module.scss';
 
@@ -29,12 +34,12 @@ function AppContent() {
   }, []);
   useEffect(() => {
     document.title = route === 'accueil' ? 'CHOP-CHOP — Jeu de cuisine solo' : `${titles[route]} · CHOP-CHOP`;
-    heading.current?.focus();
+    heading.current?.focus({ preventScroll: true });
   }, [route]);
   if (route === 'accueil') return <HomePage />;
+  if (route === 'jouer' && isLocalDemo()) return <Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense>;
   if (route === 'jouer') return <>
     <PlayerGate><Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense></PlayerGate>
-    <a className={styles.back} href="#accueil">RETOUR À L’ACCUEIL</a>
   </>;
   const backLabel = route === 'regles' ? 'COMPRIS, RETOUR' : 'RETOUR';
   return (
@@ -59,10 +64,11 @@ const steps = [
 ];
 
 function Rules() {
+  const level = readSelectedLevel();
   return <>
     <p>TON BUT : servir les bonnes assiettes avant la fin des 3 minutes.</p>
     <div className={styles.row}>
-      {[['Z Q S D ou ↑ ← ↓ →', 'Se déplacer'], ['E', 'Prendre / poser', 'Appui simple'], ['C', 'Découper', 'Maintenir 3 secondes'], ['Esc', 'Pause']].map(([key, label, hint]) =>
+      {[['Z Q S D ou ↑ ← ↓ →', 'Se déplacer'], ['E', 'Prendre / poser', 'Appui simple'], ['C', level >= 2 ? 'Découper / éteindre' : 'Découper', 'Maintenir 3 secondes'], ['Esc', 'Pause']].map(([key, label, hint]) =>
         <section key={key}>{key === 'Z Q S D ou ↑ ← ↓ →' ? <div className={styles.movement}>{['ZQSD', '↑←↓→'].map((layout, i) => <span key={layout}>{i === 1 && <b>ou</b>}<span className={styles.keys}>{Array.from(layout, letter => <kbd key={letter}>{letter}</kbd>)}</span></span>)}</div> : <kbd>{key}</kbd>}<h3>{label}</h3>{hint}</section>
       )}
     </div>
@@ -71,8 +77,22 @@ function Rules() {
       <section key={title}><h3>{title}</h3><p>{body}</p></section>
     )}</div>
     <div className={styles.row}>
-      <section><h3>LES 3 RECETTES</h3>Tomate : assiette + tomate découpée<br/>Viande : assiette + viande cuite<br/>Mixte : assiette + tomate découpée + viande cuite</section>
-      <section><h3>À RETENIR</h3>Un seul objet porté à la fois. Pose-le avant d’en prendre un autre.<br/>Viande : pose-la sur le feu, attends 8 s, puis récupère-la.<br/>Après 6 s de plus, elle brûle : direction la poubelle.</section>
+      <section><h3>LES RECETTES DU NIVEAU {level}</h3>
+        <div className={styles.visualRecipes}>{getServiceRules(level).recipes.map(id => {
+          const recipe = RECIPES.find(value => value.id === id)!;
+          return <div className={styles.visualRecipe} key={id}>
+            <DishArt recipeId={id} /><strong>{recipe.name}</strong>
+            <div className={styles.recipeIngredients} aria-label={recipe.ingredients.map(value => ingredientNames[value.kind]).join(', ')}>
+              {recipe.ingredients.map(value => <img key={value.kind} src={ingredientArt(value.kind)} alt={ingredientNames[value.kind]} title={ingredientNames[value.kind]} />)}
+            </div>
+          </div>;
+        })}</div>
+      </section>
+      <section className={styles.reminders}><h3>À RETENIR</h3>
+        <p>Un objet à la fois · Assemble sur une assiette.</p>
+        <p>Découpe : <b>3 s</b>, mains libres.<br />Viande : <b>8 s</b> de cuisson, puis <b>6 s</b> avant brûlure (−10 pts, combo perdu).</p>
+        {level >= 2 ? <p>Feu : prends l’extincteur, maintiens <b>C 3 s</b>, puis jette la viande brûlée.</p> : <p>Viande brûlée ? Direction poubelle.</p>}
+      </section>
     </div>
   </>;
 }

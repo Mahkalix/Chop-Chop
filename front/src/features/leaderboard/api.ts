@@ -1,3 +1,5 @@
+import { isLocalDemo, localLeaderboard } from '../game/localDemo';
+import type { ServiceLevel } from '@chopchop/shared';
 import { LeaderboardResponseSchema, type LeaderboardResponse } from '@chopchop/shared';
 
 export async function fetchLeaderboard(
@@ -5,6 +7,7 @@ export async function fetchLeaderboard(
   levelId: number,
   signal: AbortSignal,
 ): Promise<LeaderboardResponse> {
+  if (isLocalDemo()) return { ...localLeaderboard(levelId as ServiceLevel), entries: localLeaderboard(levelId as ServiceLevel).entries.slice(0, 5) };
   if (!baseUrl?.trim()) {
     throw new Error('Le classement sera disponible lorsque l’API sera configurée.');
   }

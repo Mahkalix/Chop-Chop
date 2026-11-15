@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev:demo": "pnpm --filter @chopchop/front dev --mode demo --host 127.0.0.1",
     "dev:api": "pnpm --filter @chopchop/api dev",
     "dev:front": "pnpm --filter @chopchop/front dev",
     "build:front": "pnpm --filter @chopchop/front build",

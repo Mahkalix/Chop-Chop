@@ -4,9 +4,9 @@ Dernière vérification locale : 15 novembre 2026. Ce fichier sert de point d'en
 
 ## Résultat attendu
 
-CHOP-CHOP est un jeu web solo de cuisine, jouable au clavier sur ordinateur. Un joueur s'authentifie, lance une partie sur l'un des **trois niveaux**, prépare des plats et les livre pendant que le temps s'écoule. Les livraisons réalisées dans le temps imparti donnent des points. Le résultat doit pouvoir être enregistré et consulté dans un classement par niveau. La première priorité est une boucle jouable complète sur le niveau 1, depuis l'authentification jusqu'au classement. Les niveaux 2 et 3 viennent ensuite.
+CHOP-CHOP est un jeu web solo de cuisine, jouable au clavier sur ordinateur. Un joueur s'authentifie, lance une partie sur l'un des **trois niveaux**, prépare des plats et les livre pendant que le temps s'écoule. Les livraisons réalisées dans le temps imparti donnent des points. Le résultat doit pouvoir être enregistré et consulté dans un classement par niveau. La boucle des trois niveaux est implémentée dans la PR #86 ; distinguer cet état de branche du déploiement en production.
 
-Ces points ont été confirmés par Sabrina dans la conversation du projet. Le 6 novembre 2026, Sabrina a retenu 3 secondes de découpe et 8 secondes de cuisson. Les règles de gameplay et de classement ont ensuite été confirmées par Valérie le **14 novembre 2026**, après la réunion d'équipe : voir la section « Décisions confirmées du 14 novembre 2026 » ci-dessous. Aucun assistant ne doit déduire d'autres règles des exemples chiffrés des documents de cadrage.
+Ces points ont été confirmés par Sabrina dans la conversation du projet. Le 6 novembre 2026, Sabrina a retenu 3 secondes de découpe et 8 secondes de cuisson. Les règles de gameplay et de classement ont ensuite été confirmées par Valérie le **14 novembre 2026**, après la réunion d'équipe : voir la section « Règles actuelles et évolution des décisions » ci-dessous. Aucun assistant ne doit déduire d'autres règles des exemples chiffrés des documents de cadrage.
 
 ## Équipe et coordination
 
@@ -21,7 +21,7 @@ Le [Project](https://github.com/users/Mahkalix/projects/3) indique les statuts e
 
 ## Sources et ordre de lecture
 
-1. Ce contexte et les décisions explicites prises ensuite par l'équipe. Le détail des décisions du 14 novembre 2026, avec leur justification, est dans `docs/CONTEXTE_GAMEPLAY_DECISIONS_2026-11-14.md` et `docs/CONTEXTE_CLASSEMENT_DECISIONS_2026-11-14.md`.
+1. Ce contexte et les décisions explicites prises ensuite par l’équipe. Les décisions sont conservées directement ici ; ne pas renvoyer à des fichiers de décisions absents du dépôt.
 2. Le code de la branche réellement utilisée, ses tests, migrations et contrats partagés, pour savoir ce qui fonctionne déjà.
 3. L'issue de la tâche et les PR qui modifient la même zone, pour le travail en cours.
 4. Le [Figma CHOP-CHOP](https://www.figma.com/design/5YyQNON3zicZCKuN1CkEH0/Chop-Chop?node-id=0-1&p=f&t=NicH7XWej9pK7hHY-0) pour les parcours et l'interface. La page MAQUETTE montre notamment Accueil, Chargement, début du service, Service en cours, Temps écoulé, Résultats, Comment jouer, Pause et abandon, et Classement. Vérifier les mesures et interactions dans Figma avant de les implémenter.
@@ -31,9 +31,19 @@ Si deux sources se contredisent, consigner l'écart dans la PR ou l'issue et dem
 
 ## État de cette copie du dépôt
 
-Cette description reflète les fonctionnalités fusionnées dans `main` lors de la dernière vérification. Vérifier l'état actuel de la branche avant toute intervention : la cuisine Phaser est intégrée dans l'écran « jouer », mais le cycle complet des recettes, commandes et scores n'est pas encore raccordé. Le front ouvre une session anonyme Supabase et charge le profil avant la cuisine ; la recette sur les services déployés et le cycle complet de partie restent à intégrer.
+Référence : branche `feat/85-niveaux-1-2-3`, [PR #86](https://github.com/Mahkalix/Chop-Chop/pull/86), issue #85. Le dernier `main` (`4459f2a`, fusion de la PR #83) est intégré. Les décisions de classement et d'équité de la #83 sont conservées ; cette PR n'ajoute ni migration ni changement de schéma.
 
-Le back présent fournit authentification des appels API, profil, ouverture, fin et abandon de partie, et lecture du classement. Il applique les décisions de classement du 14 novembre 2026 (niveaux 1 à 3, plafonds, départage par date, classement par version, absence de borne de durée). Il ne fournit pas le gameplay. Les règles de gameplay du 14 novembre (ingrédients, recettes par niveau, commandes, barème, pause, étoiles) ne sont pas encore implémentées dans `packages/shared` ni dans le jeu. Les tests de l'API utilisent un dépôt en mémoire (`api.test.ts`) ; `auth.test.ts` vérifie les jetons avec un faux serveur de clés. Un essai manuel avec Supabase a été rapporté dans la PR d'intégration ; il ne remplace pas un test automatisé avec PostgreSQL réel.
+Le service complet est implémenté : trois catalogues cumulatifs, préparations, assemblages libres, commandes, chrono actif, score/combo, incendies aux niveaux 2 et 3, résultats et appels API de démarrage/fin/abandon. Les règles actuelles sont détaillées plus bas. Les propositions historiques pizza/sandwich sont remplacées par la progression tomate/viande, salade/assemblages, puis wrap.
+
+Le front propose les six chefs originaux Miso, Pipa, Basile, Alba, Nori et Gaspard. L'accueil comporte trois boutons de niveau, le choix du chef et du pseudo, le temps et les seuils d'étoiles. Le lancement enchaîne Mise en place (chargement réel), Prêt ?, puis Partez ! ; le chrono commence après la réponse de démarrage. Les erreurs de démarrage permettent un nouvel essai explicite.
+
+Cuisine sur toute la fenêtre, rangées espacées, poubelle centrale dans la rangée basse, deux postes ASSEMBLER et poste SERVIR ancré au bord droit au redimensionnement. Assets de cuisine issus du Figma, assiettes vides/garnies de taille cohérente et composition commune entre le jeu et les recettes. Aucun cadre rouge sur le poste ciblé. Les messages ordinaires de prise/dépôt et « En main : rien » sont masqués ; les erreurs et l'objet réellement porté restent indiqués.
+
+Les commandes clavier sont accessibles dans Pause ; Recettes suspend aussi le jeu. La cuisine reste visible sous un voile sombre pendant la pause et la confirmation d'abandon. Reprise par un grand décompte centré. Les règles affichent les plats et les ingrédients visuellement, sans défilement dans le cadre de référence 1440 × 900.
+
+`pnpm dev:demo` permet un essai sans compte ni API, avec résultats conservés dans l'onglet. Ce mode est réservé au développement. Le mode normal utilise Supabase Auth et les routes réelles ; ses contrôles de classement sont ceux de la #83. Les tests API utilisent un dépôt en mémoire et des clés de signature simulées pour l’authentification. Un essai manuel Supabase a été rapporté dans la PR d’intégration ; il ne remplace pas une vérification PostgreSQL automatisée. les essais navigateur locaux/simulés ne prouvent pas une écriture PostgreSQL ni le déploiement actuel.
+
+Vérifié en local : parcours de jeu, interface, pause et recettes. Dernière suite exécutée : 220 tests (26 partagés, 81 API, 112 front, 1 script), vérification des types et compilation front réussies. Voir `docs/local-levels.md`. Les comptes rendus `docs/level-1.md` et `docs/level-2.md` sont historiques, pas des spécifications courantes.
 
 ## Structure et commandes
 
@@ -42,13 +52,13 @@ Monorepo pnpm 11, Node 22 ou plus.
 | Chemin | Responsabilité actuelle |
 | --- | --- |
 | `front/` | React 19 pour les menus, les règles, le classement et les interfaces. TypeScript, Vite et modules SCSS constituent le socle actuel. |
-| Gameplay Phaser | Cuisine, personnages, collisions, animations et interactions. Le code est dans `front/src/features/game/` (scène, postes de cuisine, prise et dépôt d'objets) et s'affiche sur l'écran « jouer » ; les recettes, les commandes, le score et le raccordement à l'API restent à implémenter. |
+| Gameplay Phaser | Cuisine, personnages, collisions, animations et interactions. Le code est dans `front/src/features/game/` (scène, postes de cuisine, prise et dépôt d'objets) et porte les préparations, les assemblages, les commandes et le score ; la session React assure les appels API. |
 | `apps/api/` | Fastify 5, Drizzle, PostgreSQL Supabase, validation et routes HTTP. |
 | `packages/shared/` | Schémas Zod, types du contrat HTTP, identifiants et limites des niveaux, règles de la cuisine (ingrédients, états, recettes). |
 | `documentation/` | Site Docusaurus et documentation destinée à l'équipe ; installation et build npm séparés du monorepo pnpm. |
 | `.github/workflows/ci.yml` | Sur PR et `main`, installation, typecheck puis tests. |
 
-Commandes existantes à la racine : `pnpm install`, `pnpm dev:front`, `pnpm dev:api`, `pnpm typecheck`, `pnpm test`, `pnpm build:front`. L'API attend les variables documentées dans `apps/api/.env.example`. Ne jamais ajouter `.env` ni une valeur secrète au dépôt. Après une modification du schéma, une seule personne coordonnée avec l'équipe génère et applique les migrations Drizzle. Exécuter les vérifications pertinentes avant de proposer une PR.
+Commandes existantes à la racine : `pnpm install`, `pnpm dev:demo`, `pnpm dev:front`, `pnpm dev:api`, `pnpm typecheck`, `pnpm test`, `pnpm build:front`. L'API attend les variables documentées dans `apps/api/.env.example`. Ne jamais ajouter `.env` ni une valeur secrète au dépôt. Après une modification du schéma, une seule personne coordonnée avec l'équipe génère et applique les migrations Drizzle. Exécuter les vérifications pertinentes avant de proposer une PR.
 
 Le site `documentation/` utilise son propre `package-lock.json` et les commandes `npm ci`, `npm run typecheck` et `npm run build` depuis ce dossier. Une modification de ses pages se vérifie avec ces commandes ; elle ne se déduit pas du seul `pnpm test` de la racine.
 
@@ -72,7 +82,7 @@ L'authentification décidée est un pseudo seul, sans email ni mot de passe : le
 | `POST /games/:id/finish` | Terminer la partie à la fin du chrono avec `score` et `bestCombo`, puis recevoir le rang du record personnel dans la version de la partie, le score et la durée serveur. |
 | `POST /games/:id/abandon` | Abandonner sans résultat classé. |
 | `GET /leaderboard/:levelId` | Lire le top d'un niveau dans la version courante des règles, un record par joueur (10 par défaut, 50 au maximum). |
-| `GET /recipes` | Lire les ingrédients et leurs états, les recettes et les phases de disponibilité (route publique). |
+| `GET /recipes` | Lire les ingrédients, états, préparations, recettes et catalogues par niveau (`levels`) ; `phases` est conservé pour compatibilité (route publique). |
 
 Le contrat de requête et de réponse est dans `packages/shared/src/game.ts`. Réutiliser ces schémas au lieu de dupliquer les limites dans le front. Une seule partie peut rester ouverte par joueur ; en démarrer une nouvelle abandonne la précédente. La version de règles `v1` dure **180 secondes de jeu actif**, hors pauses. Le serveur mesure la durée entre le démarrage et la fin. **Seule une partie jouée jusqu'au bout est classée** (principe d'équité confirmé par l'équipe le 15 novembre 2026, qui remplace la sortie volontaire classée des documents du 14 novembre) : une fin reçue moins de 175 secondes après le démarrage (180 s − 5 s de marge) est refusée en `422` et la partie est clôturée. Il n'y a **pas de durée maximale**, car les pauses sont illimitées et non suivies par le serveur. Les autres contrôles sont conservés : jeton, propriété de la partie, statut, plafond de score par niveau, limitation des requêtes et fin unique. Le jeu démarre son chrono après la réponse de `POST /games`, une fois la cuisine chargée, et compte lui-même le temps actif. Prévoir les erreurs de réseau et une fin de partie soumise une seule fois.
 
@@ -80,7 +90,7 @@ Le contrat de requête et de réponse est dans `packages/shared/src/game.ts`. R�
 
 Le schéma Drizzle actuel contient `joueur`, `niveau`, `version_regles` et `partie`. `joueur.id_joueur` référence `auth.users`. La table `niveau` contient cinq lignes ; **les niveaux 4 et 5 restent dans le modèle mais ne sont plus jouables**. `LEVEL_IDS` dans `packages/shared/src/levels.ts` n'accepte que 1, 2 et 3 : l'API refuse de démarrer ou de classer les niveaux 4 et 5, et l'historique les masque. Selon Valérie, aucune partie n'existe sur ces niveaux ; revérifier avant toute action destructive.
 
-Les recettes et les ingrédients sont définis dans `packages/shared/src/recipes.ts` et exposés par `GET /recipes` ; les commandes sont prévues dans la configuration du jeu d'après le schéma et la documentation du dépôt. Le MCD/MLD transmis présente un modèle plus complet avec `RECETTE`, `INGREDIENT`, `ETAT_INGREDIENT`, `COMPOSITION` et `COMMANDE`, mais décrit aussi une variante minimale pour un prototype rapide. Ces tables supplémentaires ne sont pas présentes dans le schéma actuel. Le même document propose une identité par pseudo local sans compte. Le projet retient un pseudo seul, sans email ni mot de passe, porté par une session anonyme Supabase Auth, ce qui donne à chaque joueur un identifiant vérifié par l'API. Utiliser le document pour comprendre les concepts, sans coder ses tables sans décision explicite.
+Les recettes et les ingrédients sont définis dans `packages/shared/src/recipes.ts` et exposés par `GET /recipes` ; les paramètres de service sont dans `packages/shared/src/service.ts` et les commandes sont exécutées par `front/src/features/game/service.ts`. Le MCD/MLD transmis présente un modèle plus complet avec `RECETTE`, `INGREDIENT`, `ETAT_INGREDIENT`, `COMPOSITION` et `COMMANDE`, mais décrit aussi une variante minimale pour un prototype rapide. Ces tables supplémentaires ne sont pas présentes dans le schéma actuel. Le même document propose une identité par pseudo local sans compte. Le projet retient un pseudo seul, sans email ni mot de passe, porté par une session anonyme Supabase Auth, ce qui donne à chaque joueur un identifiant vérifié par l'API. Utiliser le document pour comprendre les concepts, sans coder ses tables sans décision explicite.
 
 Le classement retient **un record par joueur, par niveau et par version de règles**. Le top public affiche la version courante (la plus récente de `version_regles`). Une partie garde la version de son démarrage ; terminée après un changement de version, elle est classée dans son ancienne version. Le départage est : score décroissant, puis date de fin la plus ancienne (le premier arrivé passe devant), puis identifiant de partie ; **la durée n'est pas un critère**. Le rang renvoyé en fin de partie est celui du record personnel dans la version de la partie, au moment du calcul. Le rang hors top est reporté : aucune route ne le fournit, et il ne faut pas le déduire de la taille d'une liste limitée. `GET /me/best` reste toutes versions et ne doit pas être présenté comme le record classé. Les plafonds `LEVEL_LIMITS` confirmés sont **5 400, 6 750 et 8 100 points** pour les niveaux 1, 2 et 3 ; ce sont des bornes de plausibilité, pas des objectifs.
 
@@ -125,25 +135,29 @@ Dans la description de PR, indiquer le besoin, les parties du code touchées, ce
 3. Vérifier le comportement par les entrées normales du produit et les commandes du dépôt. Dire précisément ce qui a été exécuté et ce qui reste à vérifier avec Supabase, PostgreSQL ou le navigateur.
 4. Laisser la décision humaine visible : l'équipe relit les règles, le diff et la recette. Suivre les instructions de Sabrina pour les commits et les pushs de la tâche en cours.
 
-## Décisions confirmées du 14 novembre 2026
+## Règles actuelles et évolution des décisions
 
-Confirmées par Valérie après la réunion, propositions complémentaires 1 à 4 incluses. Les fichiers `docs/CONTEXTE_*_DECISIONS_2026-11-14.md` en donnent le détail. Sauf mention contraire, le gameplay ci-dessous **n'est pas encore implémenté**.
+Les décisions de classement du 14 novembre, corrigées le 15 novembre pour l'équité et appliquées dans la PR #83, restent celles des sections « Parcours front et API » et « Données et classement ». Les ajustements de gameplay et d'interface demandés par Maxence le 15 novembre sont intégrés dans la PR #86. Le détail courant est conservé ici : aucun fichier externe de décisions absent n'est requis.
 
-**Partie.** Trois niveaux jouables. 180 secondes de jeu actif. À zéro, le score est figé et transmis, sans pénalité pour les commandes restantes. **Quitter avant la fin est un abandon, jamais classé** : la sortie volontaire anticipée classée prévue dans les documents du 14 novembre a été écartée par l'équipe le 15 novembre au nom de l'équité. Fermer ou recharger la page abandonne aussi la partie, sans reprise ni classement. L'abandon volontaire se fait depuis l'écran de pause (écran « Pause et abandon » de Figma), après une **modale de confirmation**, et appelle immédiatement `POST /games/:id/abandon` (confirmé le 15 novembre 2026). Non implémenté : la cuisine affiche pour l'instant un lien « Retour à l'accueil » permanent, sans confirmation ni appel à l'API.
+**Partie.** Trois niveaux, 180 secondes actives. À zéro, score figé et transmis une seule fois, sans pénalité pour les commandes restantes. Quitter avant la fin est un abandon, jamais classé. L'abandon depuis Pause exige une confirmation et appelle immédiatement `POST /games/:id/abandon`. Fermer/recharger tente un abandon avec `keepalive` (livraison réseau non garantie), sans reprise ni classement. En cas de réponse de fin perdue, le front vérifie l'historique avant de proposer un nouvel essai ; il n'invente pas de rang.
 
-**Pause.** La pause arrête le chrono, les délais des commandes et les cuissons ; la cuisine est masquée et les instructions affichées. Changer d'onglet met en pause. Reprise après un décompte 3, 2, 1 qui ne consomme pas de temps de jeu. Pause sans durée maximale, non suivie par le serveur.
+**Pause.** Chrono, commandes, découpe, cuisson, feu et extinction sont figés. Changer d'onglet met en pause. La cuisine assombrie reste visible ; les commandes/règles sont dépliables. Reprise après 3, 2, 1 sans consommation du temps actif. Pause sans durée maximale, non suivie par le serveur (règle #83 conservée).
 
-**Ingrédients et préparations.** Tomate (découpe 3 s), salade (prête à l'emploi), viande (cuisson 8 s), pâte (cuisson 8 s). Viande, pizza et pâte brûlent 6 s après la fin de cuisson si elles restent sur le grill. Tous les plats sont servis sur la même assiette. Pas de fromage ni de four.
+**Préparations.** Tomate et salade : C maintenue 3 s à la planche, mains libres. La progression est conservée si l'action est interrompue. Viande : cuisson 8 s, puis brûlure après 6 s supplémentaires. Galette et sauce blanche prêtes à l'emploi ; aucune cuisson du wrap. La suggestion de découpe à 2 s et les délais de commandes plus longs n'ont pas été appliqués.
 
-| Plat | Composition |
-| --- | --- |
-| Salade tomate | Salade + tomate découpée |
-| Viande grillée | Viande cuite |
-| Assiette complète | Salade + tomate découpée + viande cuite |
-| Pizza | Pâte + tomate découpée, cuites 8 s sur le grill |
-| Sandwich | Pâte cuite + viande cuite + salade + tomate découpée (pas de recuisson) |
+| Niveau d'introduction | Plat | Composition sur assiette |
+| --- | --- | --- |
+| 1 | Tomate préparée | Tomate découpée |
+| 1 | Viande grillée | Viande cuite |
+| 2 | Salade tomate | Salade découpée + tomate découpée |
+| 2 | Assiette complète | Salade découpée + tomate découpée + viande cuite |
+| 3 | Wrap | Galette + salade découpée + tomate découpée + viande cuite + sauce blanche |
 
-Niveau 1 : salade tomate, viande grillée, assiette complète. Niveau 2 : niveau 1 + pizza. Niveau 3 : niveau 2 + sandwich. Le catalogue est disponible dès le début du niveau.
+Les catalogues sont cumulatifs et disponibles dès le début du niveau. Assemblage sur une assiette posée à l'un des deux postes ASSEMBLER ou sur un plan de travail, dans n'importe quel ordre. L'assiette partielle peut être déplacée. Doublons, ingrédients crus/brûlés ou étrangers à une recette du niveau sont refusés sans perdre l'objet. Une livraison sans commande correspondante conserve l'assiette.
+
+**Feu et extincteur.** Aux niveaux 2 et 3, la viande brûlée à 14 s déclenche un feu limité au grill, qui bloque ses interactions. Porter l'extincteur et maintenir C près du poste pendant 3 s ; l'extinction conserve sa progression en cas d'interruption. Reposer l'extincteur, jeter la viande brûlée, puis réutiliser le grill. Extincteur réutilisable et impossible à jeter. Pas de propagation ni de malus supplémentaire ; aucun feu au niveau 1.
+
+**Compatibilité du catalogue.** `RECIPES_BY_LEVEL` pilote le jeu. `PHASES`, `availableRecipes` et `mixed-plate` restent exportés pour les anciens appelants, sans piloter la progression actuelle. Pizza, pâte et sandwich appartiennent à l'historique du 14 novembre et ne sont pas implémentés dans cette progression.
 
 **Commandes.** 2 commandes au départ, 3 au maximum. Une commande est ajoutée si une place est libre toutes les 15 s (niveau 1), 12 s (niveau 2) ou 10 s (niveau 3), en temps actif. Délai d'une commande selon la minute de jeu : 50/45/40 s (niveau 1), 45/40/35 s (niveau 2), 40/35/30 s (niveau 3) ; une commande garde son délai initial.
 
@@ -153,13 +167,19 @@ Niveau 1 : salade tomate, viande grillée, assiette complète. Niveau 2 : niveau
 
 **Classement et API.** Voir « Données et classement » : déjà appliqué dans l'API.
 
-## Décisions ouvertes à consigner
+## Points de coordination restants
 
-1. Assemblage de la pizza avant cuisson (sur le grill, sur l'assiette ou ailleurs) et distinction au grill entre pâte seule (sandwich) et pâte avec tomate (pizza).
-2. Création d'une version de règles `v2` pour le nouveau barème, ou maintien de `v1` après nettoyage des scores de test déjà enregistrés.
-3. Structure de `packages/shared/src/recipes.ts` (catalogue par niveau, configuration des commandes), à définir avec la personne qui code les recettes et les commandes dans le jeu.
-4. Contrat concret entre le jeu Phaser, déjà intégré dans `front/src/features/game/`, et les interfaces React ; la répartition des responsabilités est déjà décidée.
-5. Mise en évidence du joueur connecté dans le classement, et taille du top affiché (le front affiche 5 entrées, le contrat en prévoit 10 par défaut).
-6. Détails de revue et de fusion qui ne sont pas fixés dans Docusaurus.
+1. Version des règles en base : coordonner toute création de `v2` ou action sur les scores de test ; aucune migration ni suppression de données n'est effectuée dans la PR #86.
+2. Vérification du parcours complet sur les services déployés avec un compte de test autorisé. Distinguer cette vérification des tests locaux/simulés déjà réalisés.
+3. Mise en évidence du joueur connecté dans le classement et taille du top affiché (5 entrées dans le front, 10 par défaut dans le contrat). Ne pas déduire un rang hors top.
+4. Détails de revue/fusion non fixés dans Docusaurus. Mettre à jour depuis `main` avant publication ; ne pas modifier en parallèle la même zone sans coordination.
 
 Chaque décision prise doit indiquer la date, la personne qui l'a validée, la règle retenue et les fichiers ou tickets à mettre en cohérence. L'ancien cahier des charges propose d'autres recettes, touches et formules de score ; ces valeurs ne remplacent pas les décisions ci-dessus.
+
+## Cohérence front (15 novembre 2026)
+
+- Aperçu de cuisine construit depuis les postes du niveau sélectionné, avec le chef choisi ; ancienne image statique retirée.
+- Même composant de sélection de niveau sur accueil et classement.
+- En mode connecté, l’accueil lit `GET /me` : pseudo enregistré affiché en lecture seule ; chargement/erreur ne permettent pas une modification trompeuse. Le brouillon reste disponible pour un nouveau profil et le mode local reste éditable.
+- Le lancement attend la réponse de `POST /games` avant Partez ; le chrono actif commence une seconde après cette confirmation. Échec et nouvel essai explicite, pause si changement d’onglet.
+- Corrections uniquement front : aucun contrat, code API, schéma ou migration modifié. Un changement de pseudo après création resterait une évolution back à décider séparément.
