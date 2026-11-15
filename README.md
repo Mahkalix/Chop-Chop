@@ -64,7 +64,7 @@ Les [conventions de travail](documentation/docs/conventions.md), l'[architecture
 
 Copier `front/.env.example` vers `front/.env` et renseigner `VITE_API_URL` avec l’origine publique de l’API, par exemple `http://localhost:3000`. Cette valeur est publique et ne doit contenir aucun secret. Redémarrer Vite après modification ; sur Vercel, reconstruire le front. L’API doit autoriser l’origine du front via `CORS_ORIGIN`.
 
-Ouvrir `#classement` et sélectionner un niveau parmi les trois prévus. Le front demande `GET /leaderboard/:levelId?limit=5` et conserve les rangs et l’ordre renvoyés par l’API. Depuis la fusion de #49, le classement retient le meilleur score de chaque joueur par niveau ; un joueur n’apparaît qu’une fois. Le serveur départage les égalités par durée, puis par date. Cette route publique ne nécessite aucun jeton Supabase.
+Ouvrir `#classement` et sélectionner un niveau parmi les trois prévus. Le front demande `GET /leaderboard/:levelId?limit=5` et conserve les rangs et l’ordre renvoyés par l’API. Depuis la fusion de #49, le classement retient le meilleur score de chaque joueur par niveau ; un joueur n’apparaît qu’une fois. Seules les parties de la version courante des règles sont classées. À score égal, le résultat atteint le plus tôt passe devant ; la durée n’est pas un critère. Cette route publique ne nécessite aucun jeton Supabase.
 
 Les états de chargement, liste vide, erreur et nouvelle tentative sont gérés sans scores fictifs. Une configuration absente affiche « Classement indisponible ». Les requêtes précédentes sont annulées lors d’un changement de niveau ou lorsque l’écran est quitté. La validation avec les services déployés reste nécessaire après configuration de l’API et de CORS.
 

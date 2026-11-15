@@ -51,13 +51,13 @@ Le parcours cible, dont le cycle de partie reste à intégrer de bout en bout, e
 | GET | `/leaderboard/:levelId?limit=10` | Non | Classement du niveau, limite maximale de 50 résultats |
 | GET | `/recipes` | Non | Ingrédients et états, recettes et phases de disponibilité |
 
-Les contrats sont définis dans `packages/shared/src/game.ts`, `levels.ts` et `recipes.ts`. `LEVEL_IDS` contient les identifiants 1 à 5. Les réponses complètes et les détails des schémas doivent être consultés dans le dépôt du jeu.
+Les contrats sont définis dans `packages/shared/src/game.ts`, `levels.ts` et `recipes.ts`. `LEVEL_IDS` contient les identifiants 1 à 3 ; les niveaux 4 et 5 restent dans la table `niveau`. Les réponses complètes et les détails des schémas doivent être consultés dans le dépôt du jeu.
 
 ## Contrôle des résultats
 
-Le serveur mesure la durée de la partie et borne le score par `LEVEL_LIMITS`. Les plafonds présents dans le code, de 500 à 1 500 points, sont **provisoires**. Avec la règle `v1`, la durée acceptée va de 175 à 240 secondes ; une durée ou un score hors limites entraîne une réponse `422`. Une seule partie en cours par joueur est autorisée.
+Le serveur borne le score par `LEVEL_LIMITS` : 5 400, 6 750 et 8 100 points pour les niveaux 1, 2 et 3. Un score hors limites entraîne une réponse `422` et clôt la partie. Le serveur mesure la durée entre le démarrage et la fin : seule une partie jouée jusqu'au bout du chrono est classée (principe d'équité confirmé par l'équipe). Avec la règle `v1`, une partie terminée moins de 175 secondes après son démarrage reçoit `422` et est clôturée ; quitter avant la fin équivaut à un abandon. Il n'y a pas de durée maximale, car les pauses sont illimitées et non suivies par le serveur. Une seule partie en cours par joueur est autorisée.
 
-Ces contrôles ne constituent pas une simulation serveur du gameplay. Une partie ne peut être terminée qu’une seule fois : un deuxième appel de fin de partie reçoit `409 Game already ended`. Le front doit seulement éviter d’envoyer deux fois la fin de partie. Le choix entre toutes les parties terminées et le meilleur score par joueur reste à trancher.
+Ces contrôles ne constituent pas une simulation serveur du gameplay. Une partie ne peut être terminée qu’une seule fois : un deuxième appel de fin de partie reçoit `409 Game already ended`. Le front doit seulement éviter d’envoyer deux fois la fin de partie. Le classement retient un record par joueur, par niveau et par version des règles ; voir le [classement](./classement.md).
 
 ## Décisions et intégration à terminer
 

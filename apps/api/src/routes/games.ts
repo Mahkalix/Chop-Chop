@@ -1,6 +1,6 @@
 import {
   FinishGameSchema,
-  GAME_DURATION_TOLERANCE_MS,
+  GAME_DURATION_EARLY_TOLERANCE_MS,
   LEVEL_LIMITS,
   StartGameSchema,
   type FinishGameResponse,
@@ -46,14 +46,16 @@ export const gameRoutes: FastifyPluginAsync<RouteDeps> = async (app, { repositor
     if (!game || game.userId !== request.userId) return reply.code(404).send({ error: "Game not found" });
     if (game.status !== "en_cours") return reply.code(409).send({ error: "Game already ended" });
 
-    // The duration is measured here: the client cannot claim a faster run.
+    // The duration is measured here: the client cannot claim a shorter run. Only a game played to
+    // the end of its timer is ranked (fairness). No upper bound: pauses are unlimited and not tracked.
     const finishedAt = now();
     const durationMs = finishedAt.getTime() - game.startedAt.getTime();
     const limits = LEVEL_LIMITS[game.levelId as keyof typeof LEVEL_LIMITS];
+    // A legacy level (4 or 5) has no limit: it can no longer be ranked.
     const plausible =
+      limits !== undefined &&
       body.data.score <= limits.maxScore &&
-      durationMs >= game.ruleDurationMs - GAME_DURATION_TOLERANCE_MS.early &&
-      durationMs <= game.ruleDurationMs + GAME_DURATION_TOLERANCE_MS.late;
+      durationMs >= game.ruleDurationMs - GAME_DURATION_EARLY_TOLERANCE_MS;
     if (!plausible) {
       // Closing the game stops a client from probing the bounds with repeated attempts.
       await repository.abandonGame(game.id, request.userId, finishedAt);

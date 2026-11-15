@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { LeaderboardEntry } from "@chopchop/shared";
+import { LEVEL_IDS, type LeaderboardEntry } from "@chopchop/shared";
 import { buildApp } from "../src/app.js";
 import type { Game, GameStatus, Repository } from "../src/repository.js";
 
@@ -8,19 +8,27 @@ interface GameRow extends Game {
   finishedAt: Date | null;
 }
 
-function memoryRepository(): Repository & { pseudos: Map<string, string> } {
+interface MemoryRepository extends Repository {
+  pseudos: Map<string, string>;
+  games: Map<string, GameRow>;
+  /** Simulates a new rules version: new games and the public leaderboard use it. */
+  newVersion(): void;
+}
+
+function memoryRepository(): MemoryRepository {
   const pseudos = new Map<string, string>();
   const games = new Map<string, GameRow>();
+  let currentVersion = 1;
   const duration = (g: GameRow) => g.finishedAt!.getTime() - g.startedAt.getTime();
   const before = (a: GameRow, b: GameRow) =>
-    b.score! - a.score! ||
-    duration(a) - duration(b) ||
-    a.finishedAt!.getTime() - b.finishedAt!.getTime() ||
-    a.id.localeCompare(b.id);
+    b.score! - a.score! || a.finishedAt!.getTime() - b.finishedAt!.getTime() || a.id.localeCompare(b.id);
   /** One game per player (their best), ranked: same rule as the SQL in the real repository. */
-  const ranked = (levelId: number) => {
+  const ranked = (levelId: number, versionId: number) => {
     const best = new Map<string, GameRow>();
-    for (const g of [...games.values()].filter((g) => g.levelId === levelId && g.status === "terminee")) {
+    const finished = [...games.values()].filter(
+      (g) => g.levelId === levelId && g.versionId === versionId && g.status === "terminee",
+    );
+    for (const g of finished) {
       const current = best.get(g.userId);
       if (!current || before(g, current) < 0) best.set(g.userId, g);
     }
@@ -31,6 +39,10 @@ function memoryRepository(): Repository & { pseudos: Map<string, string> } {
 
   return {
     pseudos,
+    games,
+    newVersion() {
+      currentVersion += 1;
+    },
     async getProfile(userId) {
       const pseudo = pseudos.get(userId);
       return pseudo ? { id: userId, pseudo } : null;
@@ -46,7 +58,10 @@ function memoryRepository(): Repository & { pseudos: Map<string, string> } {
     },
     async playerGames(userId, limit) {
       return [...games.values()]
-        .filter((g) => g.userId === userId && g.status === "terminee")
+        .filter(
+          (g) =>
+            g.userId === userId && g.status === "terminee" && (LEVEL_IDS as readonly number[]).includes(g.levelId),
+        )
         .sort((a, b) => b.finishedAt!.getTime() - a.finishedAt!.getTime())
         .slice(0, limit)
         .map((g) => ({
@@ -72,7 +87,8 @@ function memoryRepository(): Repository & { pseudos: Map<string, string> } {
       }
       const id = `00000000-0000-4000-8000-${String(++seq).padStart(12, "0")}`;
       const game: GameRow = {
-        id, userId, levelId, status: "en_cours", startedAt, ruleDurationMs: 180_000, score: null, finishedAt: null,
+        id, userId, levelId, status: "en_cours", startedAt, versionId: currentVersion, ruleDurationMs: 180_000,
+        score: null, finishedAt: null,
       };
       games.set(id, game);
       return game;
@@ -84,7 +100,7 @@ function memoryRepository(): Repository & { pseudos: Map<string, string> } {
       const g = games.get(gameId);
       if (!g || g.userId !== userId || g.status !== "en_cours") return null;
       Object.assign(g, { status: "terminee" as GameStatus, score, finishedAt });
-      const list = ranked(g.levelId);
+      const list = ranked(g.levelId, g.versionId);
       const index = list.findIndex((r) => r.userId === userId);
       const best = list[index]!;
       return { rank: index + 1, durationMs: duration(g), bestScore: best.score!, isRecord: best === g };
@@ -96,7 +112,7 @@ function memoryRepository(): Repository & { pseudos: Map<string, string> } {
       return true;
     },
     async top(levelId, limit): Promise<LeaderboardEntry[]> {
-      return ranked(levelId)
+      return ranked(levelId, currentVersion)
         .slice(0, limit)
         .map((g, i) => ({
           rank: i + 1,
@@ -117,6 +133,7 @@ const auth = (who: string) => ({ authorization: `Bearer t-${who}` });
 
 describe("API", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
+  let repository: MemoryRepository;
 
   const call = (method: "GET" | "POST" | "PUT", url: string, who?: string, payload?: object) =>
     app.inject({ method, url, headers: who ? auth(who) : {}, payload });
@@ -133,8 +150,9 @@ describe("API", () => {
 
   beforeEach(async () => {
     clock.now = new Date("2026-10-02T12:00:00Z");
+    repository = memoryRepository();
     app = await buildApp({
-      repository: memoryRepository(),
+      repository,
       authenticate: async (token) => tokens[token] ?? null,
       now: () => clock.now,
     });
@@ -235,7 +253,7 @@ describe("API", () => {
       await play("alice", 250, 181_000, 2);
       const abandoned = (await call("POST", "/games", "alice", { levelId: 3 })).json().gameId;
       await call("POST", `/games/${abandoned}/abandon`, "alice");
-      await call("POST", "/games", "alice", { levelId: 4 }); // still in progress
+      await call("POST", "/games", "alice", { levelId: 1 }); // still in progress
 
       const { games } = (await call("GET", "/me/games", "alice")).json();
       expect(games.map((g: { levelId: number; score: number }) => [g.levelId, g.score])).toEqual([
@@ -244,6 +262,32 @@ describe("API", () => {
       ]);
       expect(games[0]).toMatchObject({ durationMs: 181_000 });
       expect(games[0].gameId).toMatch(/^[0-9a-f-]{36}$/);
+    });
+
+    it("hides legacy games of levels 4 and 5 kept in the data", async () => {
+      await play("alice", 100, 180_000, 1);
+      const legacyAt = new Date(clock.now.getTime() + 1_000);
+      repository.games.set("00000000-0000-4000-8000-999999999999", {
+        id: "00000000-0000-4000-8000-999999999999",
+        userId: "user-alice",
+        levelId: 4,
+        versionId: 1,
+        ruleDurationMs: 180_000,
+        status: "terminee",
+        startedAt: clock.now,
+        finishedAt: legacyAt,
+        score: 900,
+      });
+
+      const { games } = (await call("GET", "/me/games", "alice")).json();
+      expect(games.map((g: { levelId: number }) => g.levelId)).toEqual([1]);
+    });
+
+    it("lists 10 games by default and 50 at most", async () => {
+      for (let i = 0; i < 11; i++) await play("alice", i);
+      expect((await call("GET", "/me/games", "alice")).json().games).toHaveLength(10);
+      expect((await call("GET", "/me/games?limit=50", "alice")).statusCode).toBe(200);
+      expect((await call("GET", "/me/games?limit=51", "alice")).statusCode).toBe(400);
     });
 
     it("respects the limit and validates it", async () => {
@@ -275,6 +319,15 @@ describe("API", () => {
     it("returns an empty list for a player who never played", async () => {
       expect((await call("GET", "/me/best", "carol")).json()).toEqual({ scores: [] });
     });
+
+    it("counts every rules version, unlike the current leaderboard", async () => {
+      await play("alice", 300);
+      repository.newVersion();
+      await play("alice", 100);
+      expect((await call("GET", "/me/best", "alice")).json()).toEqual({ scores: [{ levelId: 1, score: 300 }] });
+      const { entries } = (await call("GET", "/leaderboard/1")).json();
+      expect(entries.map((e: LeaderboardEntry) => e.score)).toEqual([100]);
+    });
   });
 
   describe("starting a game", () => {
@@ -290,9 +343,12 @@ describe("API", () => {
       expect((await call("POST", "/games", "newbie", { levelId: 1 })).statusCode).toBe(403);
     });
 
-    it.each([{ levelId: 9 }, { levelId: "1" }, { levelId: true }, {}])("rejects %j with 400", async (body) => {
-      expect((await call("POST", "/games", "alice", body)).statusCode).toBe(400);
-    });
+    it.each([{ levelId: 4 }, { levelId: 5 }, { levelId: 9 }, { levelId: "1" }, { levelId: true }, {}])(
+      "rejects %j with 400",
+      async (body) => {
+        expect((await call("POST", "/games", "alice", body)).statusCode).toBe(400);
+      },
+    );
   });
 
   describe("finishing a game", () => {
@@ -324,24 +380,39 @@ describe("API", () => {
       expect((await call("POST", "/games/not-a-uuid/finish", "alice", { score: 1 })).statusCode).toBe(404);
     });
 
-    it("rejects an impossibly fast run and closes the game", async () => {
-      const { gameId, res } = await play("alice", 100, 1_000);
+    it("rejects a game left before the end of the timer and closes it", async () => {
+      const { gameId, res } = await play("alice", 120, 60_000);
       expect(res.statusCode).toBe(422);
-      expect((await call("POST", `/games/${gameId}/finish`, "alice", { score: 100 })).statusCode).toBe(409);
+      expect((await call("POST", `/games/${gameId}/finish`, "alice", { score: 120 })).statusCode).toBe(409);
       expect((await call("GET", "/leaderboard/1")).json().entries).toEqual([]);
     });
 
-    it("rejects a run far longer than the rules duration", async () => {
-      expect((await play("alice", 100, 300_000)).res.statusCode).toBe(422);
+    it("accepts a game slightly shorter than the rules duration (clock and network lag)", async () => {
+      expect((await play("alice", 100, 175_000)).res.statusCode).toBe(200);
+      expect((await play("bob", 100, 174_999)).res.statusCode).toBe(422);
     });
 
-    it("accepts a run slightly off the rules duration (lag, pause)", async () => {
-      expect((await play("alice", 100, 176_000)).res.statusCode).toBe(200);
-      expect((await play("bob", 100, 230_000)).res.statusCode).toBe(200);
+    it("ranks a game with long pauses: the server does not track them", async () => {
+      expect((await play("alice", 100, 2 * 60 * 60_000)).res.statusCode).toBe(200);
     });
 
-    it("rejects a score above the level maximum", async () => {
-      expect((await play("alice", 99_999)).res.statusCode).toBe(422);
+    it.each([
+      [1, 5_400],
+      [2, 6_750],
+      [3, 8_100],
+    ])("accepts the confirmed maximum of level %i (%i points)", async (levelId, maxScore) => {
+      expect((await play("alice", maxScore, 180_000, levelId)).res.statusCode).toBe(200);
+    });
+
+    it.each([
+      [1, 5_401],
+      [2, 6_751],
+      [3, 8_101],
+    ])("rejects a score above the maximum of level %i and closes the game", async (levelId, score) => {
+      const { gameId, res } = await play("alice", score, 180_000, levelId);
+      expect(res.statusCode).toBe(422);
+      expect((await call("POST", `/games/${gameId}/finish`, "alice", { score: 100 })).statusCode).toBe(409);
+      expect((await call("GET", `/leaderboard/${levelId}`)).json().entries).toEqual([]);
     });
 
     it.each([{ score: -1 }, { score: "10" }, {}])("rejects body %j with 400", async (body) => {
@@ -369,21 +440,21 @@ describe("API", () => {
   });
 
   describe("leaderboard", () => {
-    it("sorts by score, then by duration", async () => {
+    it("sorts by score, then by who reached it first, whatever the duration", async () => {
       await play("alice", 200, 180_000);
       await play("bob", 300, 185_000);
-      await play("carol", 300, 178_000);
+      await play("carol", 300, 178_000); // shorter, but finished later
       const { entries } = (await call("GET", "/leaderboard/1")).json();
       expect(entries.map((e: LeaderboardEntry) => [e.rank, e.pseudo])).toEqual([
-        [1, "Carol"],
-        [2, "Bob"],
+        [1, "Bob"],
+        [2, "Carol"],
         [3, "Alice"],
       ]);
     });
 
     it("returns a rank consistent with the leaderboard on a tie", async () => {
       await play("bob", 300, 185_000);
-      expect((await play("carol", 300, 178_000)).res.json().rank).toBe(1);
+      expect((await play("carol", 300, 178_000)).res.json().rank).toBe(2);
     });
 
     it("lists each player once, with their best score", async () => {
@@ -415,19 +486,42 @@ describe("API", () => {
       expect((await play("alice", 300)).res.json()).toMatchObject({ rank: 1, bestScore: 300, isRecord: true });
     });
 
-    it("breaks equal scores of two players by duration, then by who finished first", async () => {
-      await play("bob", 300, 180_000);
-      await play("alice", 300, 180_000);
-      const { entries } = (await call("GET", "/leaderboard/1")).json();
-      expect(entries.map((e: LeaderboardEntry) => e.pseudo)).toEqual(["Bob", "Alice"]);
-    });
-
-    it("keeps the fastest game when a player ties their own record", async () => {
+    it("keeps the first game reaching the score when a player ties their own record", async () => {
       await play("alice", 300, 185_000);
-      await play("alice", 300, 178_000);
+      const replay = await play("alice", 300, 178_000);
+      expect(replay.res.json()).toMatchObject({ rank: 1, bestScore: 300, isRecord: false });
       const { entries } = (await call("GET", "/leaderboard/1")).json();
       expect(entries).toHaveLength(1);
-      expect(entries[0].durationMs).toBe(178_000);
+      expect(entries[0].durationMs).toBe(185_000);
+    });
+
+    it("only shows the current rules version", async () => {
+      await play("alice", 500);
+      repository.newVersion();
+      await play("bob", 100);
+      const { entries } = (await call("GET", "/leaderboard/1")).json();
+      expect(entries.map((e: LeaderboardEntry) => [e.rank, e.pseudo])).toEqual([[1, "Bob"]]);
+    });
+
+    it("ranks a game of an old version, finished after a change, in its old version", async () => {
+      await play("alice", 500);
+      const { gameId } = (await call("POST", "/games", "bob", { levelId: 1 })).json();
+      repository.newVersion();
+      await play("carol", 900);
+      advance(180_000);
+      const res = await call("POST", `/games/${gameId}/finish`, "bob", { score: 600 });
+      expect(res.json()).toMatchObject({ rank: 1, bestScore: 600, isRecord: true });
+      const { entries } = (await call("GET", "/leaderboard/1")).json();
+      expect(entries.map((e: LeaderboardEntry) => e.pseudo)).toEqual(["Carol"]);
+    });
+
+    it("keeps one record per player in each rules version", async () => {
+      await play("alice", 300);
+      repository.newVersion();
+      await play("alice", 100);
+      await play("alice", 200);
+      const { entries } = (await call("GET", "/leaderboard/1")).json();
+      expect(entries.map((e: LeaderboardEntry) => [e.pseudo, e.score])).toEqual([["Alice", 200]]);
     });
 
     it("only lists finished games of the requested level", async () => {
@@ -443,6 +537,7 @@ describe("API", () => {
       await play("bob", 200);
       expect((await call("GET", "/leaderboard/1?limit=1")).json().entries).toHaveLength(1);
       expect((await call("GET", "/leaderboard/42")).statusCode).toBe(400);
+      expect((await call("GET", "/leaderboard/4")).statusCode).toBe(400);
       expect((await call("GET", "/leaderboard/1?limit=1000")).statusCode).toBe(400);
     });
   });
