@@ -25,7 +25,7 @@ export const meRoutes: FastifyPluginAsync<RouteDeps> = async (app, { repository,
     return profile;
   });
 
-  // The pseudo is chosen once and never changes: past scores keep the same name on the leaderboards.
+  // Creation stays separate from updates so existing clients keep their retry semantics.
   app.put("/me", { preHandler: requireAuth }, async (request, reply) => {
     const parsed = ProfileInputSchema.safeParse(request.body);
     if (!parsed.success) return invalid(reply, parsed.error);
@@ -39,6 +39,16 @@ export const meRoutes: FastifyPluginAsync<RouteDeps> = async (app, { repository,
         return reply.code(409).send({ error: "Pseudo already chosen" });
       }
     }
+    return { id: request.userId, pseudo: parsed.data.pseudo };
+  });
+
+  app.patch("/me", { preHandler: requireAuth }, async (request, reply) => {
+    const parsed = ProfileInputSchema.safeParse(request.body);
+    if (!parsed.success) return invalid(reply, parsed.error);
+
+    const result = await repository.updatePseudo(request.userId, parsed.data.pseudo);
+    if (result === "pseudo_taken") return reply.code(409).send({ error: "Pseudo already taken" });
+    if (result === "not_found") return reply.code(404).send({ error: "Profile not created yet" });
     return { id: request.userId, pseudo: parsed.data.pseudo };
   });
 

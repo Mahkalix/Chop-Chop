@@ -7,9 +7,9 @@ Tout ce qu'il faut pour appeler l'API depuis le front. Le code de référence es
 | | |
 |---|---|
 | URL en local | `http://localhost:3000` (`pnpm dev:api`) |
-| Format | JSON, `Content-Type: application/json` sur les `POST`/`PUT` |
+| Format | JSON, `Content-Type: application/json` sur les `POST`/`PUT`/`PATCH` |
 | Authentification | Jeton Supabase dans `Authorization: Bearer <jeton>` |
-| Identité du joueur | Connexion anonyme Supabase + pseudo choisi une fois |
+| Identité du joueur | Connexion anonyme Supabase + pseudo modifiable |
 | Dates | Chaînes ISO 8601 (`2026-11-06T10:55:00.000Z`) |
 | Durées | En millisecondes |
 
@@ -20,6 +20,7 @@ Tout ce qu'il faut pour appeler l'API depuis le front. Le code de référence es
 | GET | [`/health`](#get-health) | non | Vérifier que l'API tourne |
 | GET | [`/me`](#get-me) | oui | Profil du joueur connecté |
 | PUT | [`/me`](#put-me) | oui | Choisir son pseudo (une seule fois) |
+| PATCH | [`/me`](#patch-me) | oui | Modifier son propre pseudo |
 | GET | [`/pseudos/:pseudo/available`](#get-pseudospseudoavailable) | oui | Un pseudo est-il libre ? |
 | GET | [`/me/games`](#get-megames) | oui | Historique de ses parties terminées |
 | GET | [`/me/best`](#get-mebest) | oui | Son meilleur score par niveau |
@@ -170,7 +171,7 @@ Profil du joueur connecté.
 
 ### PUT /me
 
-Choisit le pseudo. **Définitif** : impossible à changer ensuite.
+Crée le profil avec son premier pseudo. Pour le modifier ensuite, utiliser `PATCH /me`.
 
 Corps : `{ "pseudo": "Gordon" }`
 
@@ -181,16 +182,30 @@ Règles du pseudo : 2 à 16 caractères, lettres (accents compris), chiffres, es
 - `409` `{ "error": "Pseudo already taken" }` : pris par un autre joueur
 - `409` `{ "error": "Pseudo already chosen" }` : ce joueur a déjà un **autre** pseudo (le changement est refusé)
 
-Prévenez le joueur avant de valider que son pseudo sera définitif.
+### PATCH /me
+
+Modifie uniquement le pseudo du joueur identifié par le jeton. Aucun identifiant de joueur n'est accepté comme cible dans le corps.
+
+Corps : `{ "pseudo": "Nouveau chef" }`. Réutilise les règles de `PUT /me` : 2 à 16 caractères après retrait des espaces autour, mêmes caractères autorisés et unicité insensible à la casse.
+
+- `200` : profil mis à jour `{ "id": "b1a5…", "pseudo": "Nouveau chef" }`. Le même pseudo et un changement de casse de son propre pseudo sont acceptés.
+- `400` : pseudo invalide (avec `issues`).
+- `401` : jeton absent ou invalide.
+- `404` : `{ "error": "Profile not created yet" }` ; créer le profil par `PUT /me` d'abord.
+- `409` : `{ "error": "Pseudo already taken" }` ; le profil reste inchangé.
+
+**Scores existants :** le nouveau pseudo apparaît aussi sur tous les anciens scores dans le classement. Les parties restent associées au même identifiant ; scores, dates et rangs ne sont pas modifiés. L'ancien pseudo est libéré. Décision confirmée par la personne responsable de la tâche le 15 novembre 2026.
+
+L'index unique PostgreSQL arbitre les demandes concurrentes ; une pré-vérification de disponibilité ne réserve pas le pseudo. Aucun changement de schéma ni migration n'est nécessaire.
 
 ### GET /pseudos/:pseudo/available
 
-Pour afficher « déjà pris » pendant la saisie, avant d'envoyer `PUT /me`. Pensez à `encodeURIComponent(pseudo)`.
+Pour afficher « déjà pris » pendant la saisie, avant d'envoyer `PUT /me` ou `PATCH /me`. Pensez à `encodeURIComponent(pseudo)`.
 
 - `200` : `{ "pseudo": "Gordon", "available": true }`
 - `400` : pseudo invalide (trop court, caractères interdits...)
 
-Cette route donne seulement une indication : entre-temps un autre joueur peut prendre le pseudo, donc gérez quand même le `409` de `PUT /me`.
+Cette route donne seulement une indication : entre-temps un autre joueur peut prendre le pseudo, donc gérez quand même le `409` de `PUT /me` ou `PATCH /me`. Elle renvoie aussi `available: false` pour son propre pseudo actuel ; `PATCH /me` accepte néanmoins de le renvoyer ou d'en changer la casse.
 
 ### GET /me/games
 

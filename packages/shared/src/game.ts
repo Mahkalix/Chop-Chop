@@ -21,7 +21,7 @@ export const PseudoSchema = z
   .max(16)
   .regex(/^[\p{L}\p{M}\p{N} _-]+$/u, "Only letters, digits, spaces, '_' and '-' are allowed");
 
-/** PUT /me */
+/** PUT /me (create) and PATCH /me (change pseudo). */
 export const ProfileInputSchema = z.object({ pseudo: PseudoSchema });
 
 /** POST /games */

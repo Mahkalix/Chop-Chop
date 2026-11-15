@@ -53,6 +53,13 @@ function memoryRepository(): MemoryRepository {
       pseudos.set(userId, pseudo);
       return "saved";
     },
+    async updatePseudo(userId, pseudo) {
+      if (!pseudos.has(userId)) return "not_found";
+      const taken = [...pseudos].some(([id, name]) => id !== userId && name.toLowerCase() === pseudo.toLowerCase());
+      if (taken) return "pseudo_taken";
+      pseudos.set(userId, pseudo);
+      return "saved";
+    },
     async isPseudoAvailable(pseudo) {
       return !isTaken(pseudo);
     },
@@ -135,7 +142,7 @@ describe("API", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   let repository: MemoryRepository;
 
-  const call = (method: "GET" | "POST" | "PUT", url: string, who?: string, payload?: object) =>
+  const call = (method: "GET" | "POST" | "PUT" | "PATCH", url: string, who?: string, payload?: object) =>
     app.inject({ method, url, headers: who ? auth(who) : {}, payload });
 
   const setPseudo = (who: string, pseudo: string) => call("PUT", "/me", who, { pseudo });
@@ -165,6 +172,7 @@ describe("API", () => {
     it.each([
       ["GET", "/me"],
       ["PUT", "/me"],
+      ["PATCH", "/me"],
       ["POST", "/games"],
       ["POST", "/games/00000000-0000-4000-8000-000000000001/finish"],
       ["POST", "/games/00000000-0000-4000-8000-000000000001/abandon"],
@@ -217,7 +225,7 @@ describe("API", () => {
       expect(res.json()).toEqual({ id: "user-alice", pseudo: "Alice" });
     });
 
-    it("never changes a pseudo once chosen", async () => {
+    it("keeps PUT for creation only", async () => {
       const res = await setPseudo("alice", "Alicia");
       expect(res.statusCode).toBe(409);
       expect(res.json()).toEqual({ error: "Pseudo already chosen" });
@@ -227,6 +235,91 @@ describe("API", () => {
     it.each(["A", "<script>", "x".repeat(17), ""])("rejects invalid pseudo %j", async (pseudo) => {
       tokens["t-newbie"] = "user-newbie";
       expect((await setPseudo("newbie", pseudo)).statusCode).toBe(400);
+    });
+  });
+
+  describe("pseudo updates", () => {
+    const rename = (who: string, pseudo: string) => call("PATCH", "/me", who, { pseudo });
+
+    it("allows browser preflight requests for PATCH", async () => {
+      const res = await app.inject({
+        method: "OPTIONS", url: "/me",
+        headers: { origin: "http://localhost:5173", "access-control-request-method": "PATCH" },
+      });
+      expect(res.statusCode).toBe(204);
+      expect(res.headers["access-control-allow-methods"]).toContain("PATCH");
+    });
+
+    it("updates only the authenticated profile, ignoring a supplied user id", async () => {
+      const res = await call("PATCH", "/me", "alice", { pseudo: "  Alicia  ", id: "user-bob", userId: "user-bob" });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toEqual({ id: "user-alice", pseudo: "Alicia" });
+      expect((await call("GET", "/me", "alice")).json().pseudo).toBe("Alicia");
+      expect((await call("GET", "/me", "bob")).json().pseudo).toBe("Bob");
+    });
+
+    it("requires an existing profile", async () => {
+      tokens["t-newbie"] = "user-newbie";
+      expect((await rename("newbie", "Newbie")).statusCode).toBe(404);
+      expect((await call("GET", "/me", "newbie")).statusCode).toBe(404);
+    });
+
+    it.each(["Bob", "bOb", "  BOB  "])("rejects another player's pseudo %j without changing either profile", async (pseudo) => {
+      const res = await rename("alice", pseudo);
+      expect(res.statusCode).toBe(409);
+      expect(res.json()).toEqual({ error: "Pseudo already taken" });
+      expect((await call("GET", "/me", "alice")).json().pseudo).toBe("Alice");
+      expect((await call("GET", "/me", "bob")).json().pseudo).toBe("Bob");
+    });
+
+    it("accepts retries and changes to the casing of one's own pseudo", async () => {
+      for (const pseudo of ["Alice", "ALICE", "ALICE"]) {
+        const res = await rename("alice", pseudo);
+        expect(res.statusCode).toBe(200);
+        expect(res.json()).toEqual({ id: "user-alice", pseudo });
+      }
+    });
+
+    it.each(["A", "", "   ", "x".repeat(17), "<script>", "chef!", "chef🍳"])("rejects invalid pseudo %j", async (pseudo) => {
+      expect((await rename("alice", pseudo)).statusCode).toBe(400);
+      expect((await call("GET", "/me", "alice")).json().pseudo).toBe("Alice");
+    });
+
+    it.each([{}, { pseudo: null }, { pseudo: 42 }])("rejects malformed payload %j", async (payload) => {
+      expect((await call("PATCH", "/me", "alice", payload)).statusCode).toBe(400);
+    });
+
+    it.each(["Ab", "x".repeat(16), "Élise_2 - chef"])("accepts valid pseudo %j", async (pseudo) => {
+      const res = await rename("alice", pseudo);
+      expect(res.statusCode).toBe(200);
+      expect(res.json().pseudo).toBe(pseudo);
+    });
+
+    it("releases the old pseudo and reserves the new one", async () => {
+      await rename("alice", "Alicia");
+      expect((await call("GET", "/pseudos/Alice/available", "bob")).json().available).toBe(true);
+      expect((await call("GET", "/pseudos/ALICIA/available", "bob")).json().available).toBe(false);
+      expect((await rename("bob", "Alice")).statusCode).toBe(200);
+    });
+
+    it("allows only one player to claim the same free pseudo", async () => {
+      const responses = await Promise.all([rename("alice", "Chef"), rename("bob", "CHEF")]);
+      expect(responses.map((res) => res.statusCode).sort()).toEqual([200, 409]);
+      expect([...repository.pseudos.values()].filter((pseudo) => pseudo.toLowerCase() === "chef")).toHaveLength(1);
+    });
+
+    it("shows the new pseudo on past scores without changing results or history", async () => {
+      await play("alice", 300);
+      await play("bob", 200);
+      const before = (await call("GET", "/leaderboard/1")).json().entries;
+      const history = (await call("GET", "/me/games", "alice")).json();
+      const best = (await call("GET", "/me/best", "alice")).json();
+      await rename("alice", "Alicia");
+      expect((await call("GET", "/leaderboard/1")).json().entries).toEqual([
+        { ...before[0], pseudo: "Alicia" }, before[1],
+      ]);
+      expect((await call("GET", "/me/games", "alice")).json()).toEqual(history);
+      expect((await call("GET", "/me/best", "alice")).json()).toEqual(best);
     });
   });
 
