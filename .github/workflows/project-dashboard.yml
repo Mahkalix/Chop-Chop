@@ -1,0 +1,91 @@
+name: Tableau de bord projet
+
+on:
+  pull_request:
+    paths:
+      - 'documentation/**'
+      - '.github/workflows/project-dashboard.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: documentation
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: documentation/package-lock.json
+      - run: npm ci
+      - run: npm run test:project
+      - run: npm run typecheck
+      - run: npm run build
+
+  snapshot:
+    permissions:
+      actions: read
+      contents: read
+      issues: read
+      pull-requests: read
+    if: github.event_name == 'workflow_dispatch' && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm --prefix documentation run sync:project
+        env:
+          CHOP_REPO_TOKEN: ${{ github.token }}
+          CHOP_PROJECT_TOKEN: ${{ secrets.CHOP_PROJECT_TOKEN }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chop-chop-project-snapshot
+          path: documentation/src/project/snapshot.json
+          if-no-files-found: error
+
+  refresh-docs:
+    if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    concurrency: chop-chop-docs-refresh
+    steps:
+      - name: Actualiser la documentation Vercel
+        env:
+          CHOP_DOCS_DEPLOY_HOOK: ${{ secrets.CHOP_DOCS_DEPLOY_HOOK }}
+        run: |
+          node --input-type=module <<'JS'
+          const hook = process.env.CHOP_DOCS_DEPLOY_HOOK;
+          if (!hook) {
+            console.log('Actualisation Vercel non configurée.');
+            process.exit(0);
+          }
+          let url;
+          try {
+            url = new URL(hook);
+          } catch {
+            console.error('Adresse du hook Vercel invalide.');
+            process.exit(1);
+          }
+          if (url.origin !== 'https://api.vercel.com' || !url.pathname.startsWith('/v1/integrations/deploy/')) {
+            console.error('Adresse du hook Vercel invalide.');
+            process.exit(1);
+          }
+          const response = await fetch(url, {method: 'POST', redirect: 'error', signal: AbortSignal.timeout(20_000)})
+            .catch(() => null);
+          if (!response?.ok) {
+            console.error('Vercel a refusé la demande de reconstruction.');
+            process.exit(1);
+          }
+          console.log('Reconstruction Vercel demandée. Consulter Vercel pour le résultat.');
+          JS

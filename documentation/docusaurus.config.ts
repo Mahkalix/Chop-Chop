@@ -43,6 +43,12 @@ const config: Config = {
           {to: '/docs/conventions', label: 'Conventions et règles de travail'},
         ]},
         {to: '/docs/cas-utilisation', label: 'Cas d’utilisation', position: 'left'},
+        {type: 'dropdown', label: 'Gestion de projet', position: 'left', items: [
+          {to: '/gestion-de-projet', label: 'Tableau de bord'},
+          {to: '/gestion-de-projet#backlog', label: 'Tickets ouverts'},
+          {to: '/gestion-de-projet#dependances', label: 'Graphe des dépendances'},
+          {to: '/bilan-de-projet', label: 'Bilan de soutenance'},
+        ]},
         {to: '/docs/references', label: 'Références', position: 'right'},
         {href: 'https://www.figma.com/design/5YyQNON3zicZCKuN1CkEH0/Chop-Chop?node-id=0-1', label: 'Figma', position: 'right'},
       ],
