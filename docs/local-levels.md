@@ -85,3 +85,11 @@ Référence vérifiée : Figma CHOP-CHOP, écran « 06 — Service en cours », 
 Accueil avec sélection du niveau par boutons et six chefs originaux. Loader crème, barre noire et remplissage rouge suivant le chargement ; Prêt puis Partez sur fond rouge, sans consommation de temps actif. Pause et abandon en fenêtres sur cuisine assombrie, décompte de reprise centré, commandes dépliables. Règles illustrées sans défilement dans le cadre 1440 × 900. Assiettes et ingrédients harmonisés entre commandes, recettes et comptoirs. Les messages ordinaires de prise/dépôt et le libellé de mains vides sont masqués.
 
 La PR #86 ajoute côté API le champ `levels` de `GET /recipes` et met à jour ses données partagées. Les contrôles d’équité, plafonds, classement par version et départage de la #83 restent inchangés.
+
+## Cohérence front (15 novembre 2026)
+
+- Aperçu de cuisine construit depuis les postes du niveau sélectionné, avec le chef choisi ; ancienne image statique retirée.
+- Même composant de sélection de niveau sur accueil et classement.
+- En mode connecté, l’accueil lit `GET /me` : pseudo enregistré affiché en lecture seule ; chargement/erreur ne permettent pas une modification trompeuse. Le brouillon reste disponible pour un nouveau profil et le mode local reste éditable.
+- Le lancement attend la réponse de `POST /games` avant Partez ; le chrono actif commence une seconde après cette confirmation. Échec et nouvel essai explicite, pause si changement d’onglet.
+- Corrections uniquement front : aucun contrat, code API, schéma ou migration modifié. Un changement de pseudo après création resterait une évolution back à décider séparément.

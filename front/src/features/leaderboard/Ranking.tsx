@@ -1,3 +1,4 @@
+import { LevelPicker } from '../home/LevelPicker';
 import { isLocalDemo } from '../game/localDemo';
 import { useEffect, useState } from 'react';
 import type { LeaderboardEntry, LeaderboardResponse } from '@chopchop/shared';
@@ -47,10 +48,7 @@ function LiveRanking() {
   }
 
   return <section className={styles.ranking} aria-label="Classement par niveau">
-    <label htmlFor="ranking-level">NIVEAU </label>
-    <select id="ranking-level" value={level} onChange={event => changeLevel(Number(event.target.value))}>
-      {[1, 2, 3].map(id => <option key={id} value={id}>Niveau {id}</option>)}
-    </select>
+    <LevelPicker value={level} onChange={changeLevel} />
     <h2 className={styles.title}>{isLocalDemo() ? "TOP 5 LOCAL · CET ONGLET UNIQUEMENT" : "TOP 5 · LES AS DU FOURNEAU"}</h2>
     <div aria-live="polite" aria-busy={result.status === 'loading'}>
       {result.status === 'loading' && <p>Chargement du classement…</p>}

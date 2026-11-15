@@ -6,7 +6,7 @@ import type { KitchenScene } from './KitchenScene';
 import { abandonGame, finishGame, gameHistory, GameApiError, startGame } from './gameApi';
 import { createService, type Service } from './service';
 
-export type ServicePhase = 'ready' | 'starting' | 'running' | 'paused' | 'countdown' | 'ended';
+export type ServicePhase = 'ready' | 'starting' | 'go' | 'running' | 'paused' | 'countdown' | 'ended';
 
 export function useServiceSession(levelId: ServiceLevel = 1) {
   const { client } = useAuth();
@@ -47,7 +47,7 @@ export function useServiceSession(levelId: ServiceLevel = 1) {
       current.current.id = game.gameId;
       // The cuisine is loaded before POST /games. Active time starts only after its response.
       if (document.hidden) { setPhase('paused'); scene.current.setPaused(true); }
-      else { setPhase('running'); scene.current.startService(); }
+      else setPhase('go');
     } catch (cause) {
       if (mounted.current) { setError((cause as Error).message); setPhase('ready'); }
     } finally { busy.current = false; }
@@ -83,7 +83,7 @@ export function useServiceSession(levelId: ServiceLevel = 1) {
     void save(finalService);
   };
   const pause = useCallback(() => {
-    if (!['running', 'countdown'].includes(phaseRef.current)) return;
+    if (!['running', 'countdown', 'go'].includes(phaseRef.current)) return;
     scene.current?.setPaused(true); setPhase('paused');
   }, [setPhase]);
   const resume = () => { setConfirmQuit(false); setCountdown(3); setPhase('countdown'); };
@@ -100,6 +100,14 @@ export function useServiceSession(levelId: ServiceLevel = 1) {
       } else setError((cause as Error).message);
     } finally { busy.current = false; if (mounted.current) setSaving(false); }
   };
+
+  useEffect(() => {
+    if (phase !== 'go') return;
+    const timer = window.setTimeout(() => {
+      scene.current?.startService(); setPhase('running');
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [phase, setPhase]);
 
   useEffect(() => {
     if (phase !== 'countdown') return;

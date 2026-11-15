@@ -34,7 +34,7 @@ function AppContent() {
   }, []);
   useEffect(() => {
     document.title = route === 'accueil' ? 'CHOP-CHOP — Jeu de cuisine solo' : `${titles[route]} · CHOP-CHOP`;
-    heading.current?.focus();
+    heading.current?.focus({ preventScroll: true });
   }, [route]);
   if (route === 'accueil') return <HomePage />;
   if (route === 'jouer' && isLocalDemo()) return <Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense>;

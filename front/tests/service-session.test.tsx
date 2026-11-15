@@ -26,10 +26,16 @@ function setup() {
   return { ...hook, scene };
 }
 
-it('waits for the start response, prevents double start, saves once and presents the result', async () => {
+it('waits for the start response, shows go without consuming play time, then saves once', async () => {
+  vi.useFakeTimers();
   const { result, scene } = setup();
   await act(async () => { await Promise.all([result.current.start(), result.current.start()]); });
   expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(result.current.phase).toBe('go');
+  expect(scene.startService).not.toHaveBeenCalled();
+  act(() => vi.advanceTimersByTime(999));
+  expect(scene.startService).not.toHaveBeenCalled();
+  act(() => vi.advanceTimersByTime(1));
   expect(scene.startService).toHaveBeenCalledTimes(1);
   expect(result.current.phase).toBe('running');
   expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ levelId: 1 });
@@ -120,4 +126,21 @@ it.each([2, 3] as const)('preserves level %s from session creation through score
   expect(result.current.service.levelId).toBe(levelId);
   expect(result.current.saved).toBe(true);
   expect(fetchMock.mock.calls[1]![0]).toContain('/run-2/finish');
+});
+
+
+it('does not show go before a delayed API response and can retry a failed start', async () => {
+  const { result, scene } = setup();
+  let resolve!: (value: ReturnType<typeof response>) => void;
+  fetchMock.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+  let pending!: Promise<void>;
+  await act(async () => { pending = result.current.start(); });
+  expect(result.current.phase).toBe('starting');
+  expect(scene.startService).not.toHaveBeenCalled();
+  await act(async () => { resolve(response({}, 503)); await pending; });
+  expect(result.current.phase).toBe('ready');
+  expect(result.current.error).not.toBe('');
+  await act(async () => { await result.current.start(); });
+  expect(result.current.phase).toBe('go');
+  expect(result.current.error).toBe('');
 });

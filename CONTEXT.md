@@ -175,3 +175,11 @@ Les catalogues sont cumulatifs et disponibles dès le début du niveau. Assembla
 4. Détails de revue/fusion non fixés dans Docusaurus. Mettre à jour depuis `main` avant publication ; ne pas modifier en parallèle la même zone sans coordination.
 
 Chaque décision prise doit indiquer la date, la personne qui l'a validée, la règle retenue et les fichiers ou tickets à mettre en cohérence. L'ancien cahier des charges propose d'autres recettes, touches et formules de score ; ces valeurs ne remplacent pas les décisions ci-dessus.
+
+## Cohérence front (15 novembre 2026)
+
+- Aperçu de cuisine construit depuis les postes du niveau sélectionné, avec le chef choisi ; ancienne image statique retirée.
+- Même composant de sélection de niveau sur accueil et classement.
+- En mode connecté, l’accueil lit `GET /me` : pseudo enregistré affiché en lecture seule ; chargement/erreur ne permettent pas une modification trompeuse. Le brouillon reste disponible pour un nouveau profil et le mode local reste éditable.
+- Le lancement attend la réponse de `POST /games` avant Partez ; le chrono actif commence une seconde après cette confirmation. Échec et nouvel essai explicite, pause si changement d’onglet.
+- Corrections uniquement front : aucun contrat, code API, schéma ou migration modifié. Un changement de pseudo après création resterait une évolution back à décider séparément.

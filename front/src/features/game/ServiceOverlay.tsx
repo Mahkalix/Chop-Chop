@@ -17,7 +17,7 @@ export function ServiceOverlay({ session, ready, loadingProgress = 0, showRecipe
   }, [phase]);
   const rules = getServiceRules(service.levelId);
   const stars = rules.stars.filter(value => service.score >= value).length;
-  if (phase === 'ready' || phase === 'starting') return <ServiceIntro ready={ready} progress={loadingProgress} level={service.levelId} error={session.error} start={session.start} />;
+  if (phase === 'ready' || phase === 'starting' || phase === 'go') return <ServiceIntro phase={phase} ready={ready} progress={loadingProgress} level={service.levelId} error={session.error} start={session.start} />;
   return <dialog ref={dialog} className={`${styles.dialog} ${phase === 'paused' ? styles.pauseDialog : phase === 'countdown' ? styles.countdownDialog : ''}`} tabIndex={-1} onCancel={event => event.preventDefault()} aria-labelledby="service-title">
     {phase !== 'countdown' && <p className={phase === 'paused' ? styles.eyebrow : styles.brand}>{phase === 'paused' ? 'PARTIE EN PAUSE' : <>CHOP CHOP · NIVEAU {service.levelId}{isLocalDemo() ? " · ESSAI LOCAL" : ""}</>}</p>}
     <h1 id="service-title">{phase === 'ended' ? 'TEMPS ÉCOULÉ !' : phase === 'countdown' ? String(session.countdown)
