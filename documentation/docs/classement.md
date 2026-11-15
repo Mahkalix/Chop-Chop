@@ -3,7 +3,7 @@ title: Classement par niveau
 ---
 
 :::info Document de cadrage
-L’équipe a retenu trois niveaux avec un classement par niveau. L’API est présente dans le `main` local vérifié le 6 novembre 2026. Vérifier la branche utilisée et les [sources](./references.md) avant de modifier le contrat.
+L’équipe a retenu trois niveaux avec un classement par niveau. L’API et l’écran de classement sont intégrés dans le code local vérifié le 15 novembre 2026. Vérifier la branche utilisée et les [sources](./references.md) avant de modifier le contrat.
 :::
 
 ## Un classement pour chaque niveau
@@ -12,9 +12,11 @@ Les joueurs comparent leurs résultats pour un même niveau parmi les trois joua
 
 Associer les scores à l’identifiant du compte anonyme Supabase du joueur, distinct du pseudo affiché. Ce compte est lié à la session du navigateur : si le joueur efface ses données, il devient un nouveau joueur et ses anciens scores ne lui sont plus rattachés.
 
+La modification de son pseudo via `PATCH /me` change aussi le nom affiché pour tous ses anciens scores, sans modifier scores, dates ou rangs. L’ancien pseudo devient disponible ; l’unicité reste insensible à la casse.
+
 Afficher rang, pseudo et score ; la mise en évidence du joueur connecté reste à valider.
 
-La route publique décrite est `GET /leaderboard/:levelId?limit=10`, avec une limite maximale de 50 résultats. La pagination n’est pas prévue. Le rang personnel actualisé hors du top est reporté : aucune route ne le fournit.
+La route publique est `GET /leaderboard/:levelId?limit=10` (10 par défaut, 50 au maximum). Le front demande `limit=5` et affiche le top 5 avec un podium. La pagination n’est pas prévue. Le rang personnel actualisé hors du top est reporté : aucune route ne le fournit.
 
 Départage confirmé le 14 novembre 2026 : score décroissant, puis date de fin la plus ancienne (le premier arrivé passe devant), puis identifiant de partie. La durée n’est pas un critère.
 

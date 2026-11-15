@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="960" viewBox="0 0 1600 960" role="img" aria-labelledby="title desc">
 <title id="title">Stack technique CHOP-CHOP</title>
-<desc id="desc">Schéma de la stack : joueur, front React et Phaser prévu sur Vercel, API Fastify, Supabase Auth et PostgreSQL. Docusaurus, GitHub Actions et le paquet partagé sont en soutien. Les logos des technologies sont affichés ; les statuts précisent ce qui reste à intégrer ou à héberger.</desc>
+<desc id="desc">Schéma de la stack : joueur, front React avec Phaser intégré sur Vercel, API Fastify, Supabase Auth et PostgreSQL. Docusaurus, GitHub Actions et le paquet partagé sont en soutien. Les logos des technologies sont affichés ; les statuts distinguent intégration au code et hébergement à confirmer.</desc>
 <style>
 text{font-family:Arial,Helvetica,sans-serif;fill:#171510}
 .eyebrow{font-size:17px;letter-spacing:3px;font-weight:800;fill:#9E3020}
@@ -25,7 +25,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#171510}
 
 <text x="92" y="60" class="eyebrow" >CHOP-CHOP  /  ARCHITECTURE</text>
 <text x="46" y="115" class="title" >Les technologies derrière le service</text>
-<text x="1546" y="115" class="subtitle" text-anchor="end">Stack vérifiée · 6 novembre 2026</text>
+<text x="1546" y="115" class="subtitle" text-anchor="end">Stack vérifiée · 15 novembre 2026</text>
 <text x="46" y="185" class="section" >PARCOURS DU JOUEUR</text>
 <line x1="265" y1="431" x2="291" y2="431" stroke="#171510" stroke-width="3" />
 <path d="M287 425 L297 431 L287 437" fill="none" stroke="#171510" stroke-width="3" stroke-linecap="square"/>
@@ -80,7 +80,7 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#171510}
 <text x="451" y="548" class="heading" >Moteur de jeu</text>
 <text x="451" y="574" class="note" >Cuisine et interactions</text>
 <rect x="440" y="599" width="188" height="30" rx="2" fill="#E8DCC3"/>
-<text x="534" y="619" class="pill" text-anchor="middle" style="fill:#9E3020">EN COURS</text>
+<text x="534" y="619" class="pill" text-anchor="middle" style="fill:#9E3020">INTÉGRÉ</text>
 <rect x="773" y="228" width="330" height="430" fill="#C8BBA4" opacity=".47"/>
 <rect x="766" y="220" width="330" height="430" fill="#FFFDF8" stroke="#171510" stroke-width="2"/>
 <rect x="766" y="220" width="330" height="76" fill="#E8DCC3" stroke="#171510" stroke-width="2"/>
@@ -142,5 +142,5 @@ text{font-family:Arial,Helvetica,sans-serif;fill:#171510}
 <text x="1188" y="840" class="heading" >@chopchop/shared</text>
 <text x="1188" y="871" class="note" >Types et schémas du front et de l’API</text>
 <text x="47" y="926" class="foot" >Logos : Simple Icons et Phaser officiel</text>
-<text x="1553" y="926" class="foot" text-anchor="end">Choix actés  •  éléments non encore intégrés signalés</text>
+<text x="1553" y="926" class="foot" text-anchor="end">Code intégré  •  hébergements à confirmer signalés</text>
 </svg>
