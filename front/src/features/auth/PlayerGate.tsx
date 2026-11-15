@@ -4,6 +4,7 @@ import { useAuth } from './AuthProvider';
 import { AuthForm } from './AuthForm';
 import { ProfileError, requestProfile } from './profileApi';
 import s from './PlayerGate.module.scss';
+import { KitchenLoading } from '../game/KitchenLoading';
 
 export function PlayerGate({ children }: { children?: ReactNode }) {
   const { client, session, loading, error } = useAuth();
@@ -11,7 +12,7 @@ export function PlayerGate({ children }: { children?: ReactNode }) {
   const [signingOut, setSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState('');
   if (!client) return <section className={s.panel}><h2>La connexion se prépare.</h2><p>Le service joueur n’est pas encore disponible. Reviens bientôt.</p></section>;
-  if (loading) return <p role="status">Restauration de ta connexion…</p>;
+  if (loading) return children ? <KitchenLoading /> : <p role="status">Restauration de ta connexion…</p>;
   const token = session?.access_token;
   if (!token || token === rejectedToken) return <AuthForm
     recoverSession={rejectedToken !== null}
@@ -30,9 +31,9 @@ export function PlayerGate({ children }: { children?: ReactNode }) {
   }
   return <section>
     <ProfilePanel key={session.user.id} token={token} onExpired={() => setRejectedToken(token)}>{children}</ProfilePanel>
-    <p>Quitter cette session anonyme fait perdre l’accès à ton profil sur ce navigateur.</p>
+    {!children && <><p>Quitter cette session anonyme fait perdre l’accès à ton profil sur ce navigateur.</p>
     <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? 'Déconnexion…' : 'Se déconnecter'}</button>
-    {logoutError && <p role="alert">{logoutError}</p>}
+    {logoutError && <p role="alert">{logoutError}</p>}</>}
   </section>;
 }
 
@@ -101,9 +102,10 @@ function ProfilePanel({ token, onExpired, children }: { token: string; onExpired
     }
   }
 
-  if (loading) return <p role="status">Chargement de ton profil…</p>;
+  if (loading) return children ? <KitchenLoading /> : <p role="status">Chargement de ton profil…</p>;
   if (loadFailed && !profile) return <><p role="alert">{error}</p><button onClick={() => setAttempt(value => value + 1)}>Réessayer</button></>;
-  return <>
+  if (profile && children) return <>{children}{error && <p role="alert">{error}</p>}</>;
+  return <section className={s.panel}>
     <h2>{profile ? `BONJOUR ${profile.pseudo}` : 'CHOISIS TON PSEUDO'}</h2>
     {!profile ? <form onSubmit={save} aria-busy={saving}>
       <label htmlFor="player-pseudo">Pseudo du classement</label>
@@ -116,5 +118,5 @@ function ProfilePanel({ token, onExpired, children }: { token: string; onExpired
     </>}
     {error && <p role="alert">{error}</p>}
     {loadFailed && profile && <button onClick={() => setAttempt(value => value + 1)}>Réessayer</button>}
-  </>;
+  </section>;
 }

@@ -4,6 +4,7 @@ import { ingredientArt, ingredientNames } from '../features/game/recipePresentat
 import { isLocalDemo } from '../features/game/localDemo';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../features/auth/AuthProvider';
+import { KitchenLoading } from '../features/game/KitchenLoading';
 import { PlayerGate } from '../features/auth/PlayerGate';
 import { Ranking } from '../features/leaderboard/Ranking';
 import { readSelectedLevel } from '../features/game/levelSelection';
@@ -37,9 +38,9 @@ function AppContent() {
     heading.current?.focus({ preventScroll: true });
   }, [route]);
   if (route === 'accueil') return <HomePage />;
-  if (route === 'jouer' && isLocalDemo()) return <Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense>;
+  if (route === 'jouer' && isLocalDemo()) return <Suspense fallback={<KitchenLoading />}><Kitchen /></Suspense>;
   if (route === 'jouer') return <>
-    <PlayerGate><Suspense fallback={<p>MISE EN PLACE…</p>}><Kitchen /></Suspense></PlayerGate>
+    <PlayerGate><Suspense fallback={<KitchenLoading />}><Kitchen /></Suspense></PlayerGate>
   </>;
   const backLabel = route === 'regles' ? 'COMPRIS, RETOUR' : 'RETOUR';
   return (

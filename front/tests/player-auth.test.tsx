@@ -54,6 +54,9 @@ it('opens an anonymous session, reads the profile and unlocks the existing kitch
   expect(screen.queryByText('Kitchen mounted')).toBeNull();
   await user.click(await screen.findByRole('button', { name: 'Continuer' }));
   expect(await screen.findByText('Kitchen mounted')).toBeTruthy();
+  expect(screen.queryByText('Ton profil est prêt.')).toBeNull();
+  expect(screen.queryByText(/BONJOUR/)).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Se déconnecter' })).toBeNull();
   expect(authMock.signInAnonymously).toHaveBeenCalledWith();
   expect(fetchMock).toHaveBeenCalledTimes(1);
   expect(fetchMock.mock.calls[0]![1]).toMatchObject({ method: 'GET', headers: { Authorization: 'Bearer current-token' } });
