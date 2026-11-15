@@ -19,8 +19,10 @@ export interface Game {
 
 export interface Repository {
   getProfile(userId: string): Promise<Profile | null>;
-  /** Creates the profile of a user. The pseudo is final: a user who already has one gets "already_set". */
+  /** Creates a profile; an existing profile gets "already_set". */
   saveProfile(userId: string, pseudo: string): Promise<"saved" | "pseudo_taken" | "already_set">;
+  /** Changes only this user's pseudo. Leaderboards also use it for past games. */
+  updatePseudo(userId: string, pseudo: string): Promise<"saved" | "pseudo_taken" | "not_found">;
   /** True if nobody uses this pseudo yet (case-insensitive). */
   isPseudoAvailable(pseudo: string): Promise<boolean>;
   /** Finished games of a player on the playable levels, newest first. */
@@ -120,6 +122,21 @@ export function createRepository(db: Db): Repository {
           .returning({ id: joueur.idJoueur });
         return inserted.length > 0 ? "saved" : "already_set";
       } catch (err) {
+        if (isUniqueViolation(err)) return "pseudo_taken";
+        throw err;
+      }
+    },
+
+    async updatePseudo(userId, pseudo) {
+      try {
+        const updated = await db
+          .update(joueur)
+          .set({ pseudo })
+          .where(eq(joueur.idJoueur, userId))
+          .returning({ id: joueur.idJoueur });
+        return updated.length > 0 ? "saved" : "not_found";
+      } catch (err) {
+        // The unique index arbitrates concurrent claims, without a check-then-write race.
         if (isUniqueViolation(err)) return "pseudo_taken";
         throw err;
       }

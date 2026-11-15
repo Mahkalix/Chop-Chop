@@ -39,7 +39,7 @@ export async function buildApp({
     return reply.code(status).send({ error: error.message });
   });
 
-  await app.register(cors, { origin: corsOrigin, methods: ["GET", "POST", "PUT", "OPTIONS"] });
+  await app.register(cors, { origin: corsOrigin, methods: ["GET", "POST", "PUT", "PATCH", "OPTIONS"] });
   await app.register(rateLimit, { max: 60, timeWindow: "1 minute" });
 
   const deps = { repository, requireAuth: authGuard(authenticate), now };

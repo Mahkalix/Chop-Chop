@@ -68,13 +68,14 @@ Le site `documentation/` utilise son propre `package-lock.json` et les commandes
 
 ## Parcours front et API
 
-L'authentification décidée est un pseudo seul, sans email ni mot de passe : le front ouvre une session anonyme avec Supabase Auth (`signInAnonymously()`), puis le joueur choisit son pseudo une seule fois. L'API ne reçoit aucun identifiant, seulement un jeton `Authorization: Bearer <token>` qu'elle vérifie. Le pseudo est associé à ce compte anonyme. Les routes présentes sont :
+L'authentification décidée est un pseudo seul, sans email ni mot de passe : le front ouvre une session anonyme avec Supabase Auth (`signInAnonymously()`), puis le joueur choisit son pseudo. L'API ne reçoit aucun identifiant, seulement un jeton `Authorization: Bearer <token>` qu'elle vérifie. Le pseudo est associé à ce compte anonyme et peut être modifié par `PATCH /me`. Les routes présentes sont :
 
 | Route | Rôle |
 | --- | --- |
 | `GET /health` | Vérifier que l'API répond. |
 | `GET /me` | Lire le profil du joueur connecté ; `404` s'il n'a pas encore de pseudo. |
-| `PUT /me` | Choisir son pseudo une seule fois : il n'est plus modifiable ensuite (renvoyer le même pseudo reste accepté). |
+| `PUT /me` | Créer son profil avec son premier pseudo (renvoyer le même pseudo reste accepté ; les changements passent par `PATCH /me`). |
+| `PATCH /me` | Modifier son propre pseudo ; profil existant requis, mêmes validations et unicité insensible à la casse. Le nouveau pseudo apparaît aussi sur les anciens scores. |
 | `GET /pseudos/:pseudo/available` | Vérifier qu'un pseudo est libre. |
 | `GET /me/games` | Lire l'historique des parties terminées du joueur sur les niveaux 1 à 3 (10 par défaut, 50 au maximum). |
 | `GET /me/best` | Lire le meilleur score du joueur sur chaque niveau terminé, toutes versions de règles confondues. |
@@ -182,4 +183,10 @@ Chaque décision prise doit indiquer la date, la personne qui l'a validée, la r
 - Même composant de sélection de niveau sur accueil et classement.
 - En mode connecté, l’accueil lit `GET /me` : pseudo enregistré affiché en lecture seule ; chargement/erreur ne permettent pas une modification trompeuse. Le brouillon reste disponible pour un nouveau profil et le mode local reste éditable.
 - Le lancement attend la réponse de `POST /games` avant Partez ; le chrono actif commence une seconde après cette confirmation. Échec et nouvel essai explicite, pause si changement d’onglet.
-- Corrections uniquement front : aucun contrat, code API, schéma ou migration modifié. Un changement de pseudo après création resterait une évolution back à décider séparément.
+- Corrections de cette étape uniquement front : aucun contrat, code API, schéma ou migration modifié à cette étape. L'évolution back ultérieure est décrite ci-dessous.
+
+## Modification du pseudo côté API (15 novembre 2026)
+
+À la demande de la personne responsable de la tâche, `PATCH /me` permet de modifier uniquement le pseudo du profil authentifié. Cette personne a confirmé dans la conversation du 15 novembre 2026 que **le nouveau pseudo apparaît aussi sur tous les anciens scores**. Le classement lit déjà le pseudo courant dans `joueur` ; les parties restent liées au même identifiant, sans modifier scores, dates ou rangs. L'ancien pseudo devient disponible. `PUT /me` conserve son rôle de création. Voir `apps/api/src/routes/me.ts`, `apps/api/src/repository.ts`, le contrat `ProfileInputSchema` et `docs/API.md`.
+
+La validation existante est conservée : espaces autour retirés, longueur de 2 à 16, lettres (accents compris), chiffres, espaces, `_` et `-`. L'index unique existant sur `lower(pseudo)` protège aussi les modifications concurrentes. Aucune migration ni modification du front n'est incluse ; le pseudo reste affiché en lecture seule dans l'interface actuelle.
