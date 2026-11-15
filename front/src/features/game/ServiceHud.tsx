@@ -1,18 +1,19 @@
-import { LEVEL_ONE_RULES, RECIPES } from '@chopchop/shared';
+import { getServiceRules, RECIPES } from '@chopchop/shared';
 import type { Service } from './service';
 import styles from './Kitchen.module.scss';
 
 export function ServiceHud({ service, onPause }: { service: Service; onPause: () => void }) {
-  const seconds = Math.ceil((LEVEL_ONE_RULES.durationMs - service.elapsedMs) / 1000);
+  const seconds = Math.ceil((getServiceRules(service.levelId).durationMs - service.elapsedMs) / 1000);
   return <header className={styles.hud}>
     <section className={styles.orders} aria-label="Commandes à servir">
       {service.orders.map(order => {
         const remaining = Math.max(0, Math.ceil((order.expiresAt - service.elapsedMs) / 1000));
-        const tomato = order.recipe === 'prepared-tomato';
+        const recipe = RECIPES.find(value => value.id === order.recipe)!;
         return <article key={order.id} className={styles.order} data-urgent={remaining <= 10}>
-          <strong>#{order.id} · {RECIPES.find(recipe => recipe.id === order.recipe)?.name}</strong>
-          <span><img src={`/kitchen/items/${tomato ? 'chopped' : 'cooked'}.svg`} alt="" />
-            {tomato ? 'Découper · Mettre en assiette' : 'Cuire · Mettre en assiette'}</span>
+          <strong>#{order.id} · {recipe.name}</strong>
+          <span>{recipe.ingredients.map(ingredient => <img key={ingredient.kind}
+            src={`/kitchen/items/${ingredient.kind === 'tomato' ? 'chopped' : ingredient.kind === 'meat' ? 'cooked' : 'lettuce'}.svg`}
+            alt={ingredient.kind === 'tomato' ? 'Tomate découpée' : ingredient.kind === 'meat' ? 'Viande cuite' : 'Salade'} />)}</span>
           <progress aria-label={`Temps restant commande ${order.id}`} value={Math.max(0, order.expiresAt - service.elapsedMs)} max={order.expiresAt - order.createdAt} />
           <small>{remaining} s restantes</small>
         </article>;
@@ -20,7 +21,7 @@ export function ServiceHud({ service, onPause }: { service: Service; onPause: ()
       {!service.orders.length && <p>Prochaine commande en préparation…</p>}
     </section>
     <section className={styles.score} aria-label="Service">
-      <strong>NIVEAU 1</strong><time aria-label="Temps de service restant">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</time>
+      <strong>NIVEAU {service.levelId}</strong><time aria-label="Temps de service restant">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</time>
       <span>{service.score} pts · Prochain combo ×{service.combo}</span>
       <button onClick={onPause}>PAUSE (ÉCHAP)</button>
     </section>

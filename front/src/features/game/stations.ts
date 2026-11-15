@@ -1,6 +1,7 @@
+import type { ServiceLevel } from '@chopchop/shared';
 import type { Station } from './interactions';
 
-type KitchenStation = Station & { readonly texture: string; readonly label: string; readonly x: number; readonly y: number };
+export type KitchenStation = Station & { readonly texture: string; readonly label: string; readonly x: number; readonly y: number };
 const allItems = ['tomato', 'meat', 'plate'] as const;
 
 /** Unique ids keep individual worktops and their contents distinct. */
@@ -17,11 +18,21 @@ export const stations: readonly KitchenStation[] = [
   { id: 'counter-right', kind: 'surface', accepts: allItems, texture: 'worktop', label: '', x: 672, y: 612 },
 ];
 
+export function stationsForLevel(level: ServiceLevel): readonly KitchenStation[] {
+  if (level === 1) return stations;
+  return [
+    ...stations.map(station => station.kind === 'surface' && !station.preparation && station.id !== 'assembly'
+      ? { ...station, accepts: [...allItems, 'lettuce', 'extinguisher'] as const } : station),
+    { id: 'lettuce', kind: 'source', item: 'lettuce', texture: 'worktop', label: 'SALADE', x: 96, y: 300 },
+    { id: 'extinguisher', kind: 'surface', accepts: ['extinguisher'], texture: 'worktop', label: 'EXTINCTEUR', x: 1150, y: 300 },
+  ];
+}
+
 /** Distance from the player's feet to a counter edge; never interact through another counter. */
-export function closestStation(x: number, y: number, reach = 72): KitchenStation | null {
+export function closestStation(x: number, y: number, reach = 72, available = stations): KitchenStation | null {
   let closest: KitchenStation | null = null;
   let distance = reach;
-  for (const station of stations) {
+  for (const station of available) {
     const dx = Math.max(station.x - x, 0, x - (station.x + 144));
     const dy = Math.max(station.y - y, 0, y - (station.y + 144));
     const current = Math.hypot(dx, dy);

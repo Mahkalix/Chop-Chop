@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { LeaderboardEntry, LeaderboardResponse } from '@chopchop/shared';
 import { fetchLeaderboard } from './api';
 import styles from './Ranking.module.scss';
+import { readSelectedLevel } from '../game/levelSelection';
 
 type Result =
   | { status: 'loading' }
@@ -20,7 +21,7 @@ export function Ranking() {
 }
 
 function LiveRanking() {
-  const [level, setLevel] = useState(1);
+  const [level, setLevel] = useState<number>(readSelectedLevel);
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<Result>({ status: 'loading' });
 

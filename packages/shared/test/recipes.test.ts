@@ -16,13 +16,14 @@ const meat = (state: "raw" | "cooked" | "burnt"): Ingredient => ({ kind: "meat",
 
 describe("item kinds and ingredient states", () => {
   it("keeps the kinds used by the kitchen in the front", () => {
-    expect(ITEM_KINDS).toEqual(["tomato", "meat", "plate"]);
+    expect(ITEM_KINDS).toEqual(["tomato", "meat", "plate", "lettuce"]);
   });
 
   it("gives each ingredient its states, from raw to the last one", () => {
     expect(INGREDIENT_STATES).toEqual({
       tomato: ["raw", "chopped"],
       meat: ["raw", "cooked", "burnt"],
+      lettuce: ["ready"],
     });
   });
 });
@@ -59,11 +60,13 @@ describe("preparations", () => {
 });
 
 describe("recipes", () => {
-  it("lists the three recipes with a French name", () => {
+  it("lists the supported and legacy recipes with a French name", () => {
     expect(RECIPES.map((r) => [r.id, r.name])).toEqual([
       ["prepared-tomato", "Tomate préparée"],
       ["grilled-meat", "Viande grillée"],
       ["mixed-plate", "Assiette mixte"],
+      ["tomato-salad", "Salade tomate"],
+      ["complete-plate", "Assiette complète"],
     ]);
   });
 

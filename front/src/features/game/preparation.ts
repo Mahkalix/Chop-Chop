@@ -1,6 +1,6 @@
 import { PREPARATIONS, type PreparationAction } from '@chopchop/shared';
 import { type Inventory, type Item, type Station } from './interactions';
-import { stations } from './stations';
+import { stationsForLevel } from './stations';
 
 /** Shared prototype rules from #14: keep a single source for timing values. */
 function durationMs(action: PreparationAction) {
@@ -30,7 +30,7 @@ export function advancePreparation(inventory: Inventory, deltaMs: number, cuttin
   if (!Number.isFinite(deltaMs) || deltaMs <= 0) return { inventory, messages: [] as string[] };
   let surfaces: Record<string, Item | null> | null = null;
   const messages: string[] = [];
-  for (const station of stations) {
+  for (const station of stationsForLevel(inventory.levelId)) {
     const item = inventory.surfaces[station.id];
     if (!item) continue;
     const cutting = !inventory.carried && cuttingStationId === station.id;

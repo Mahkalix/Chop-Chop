@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { FinishGameResponse } from '@chopchop/shared';
+import type { ServiceLevel, FinishGameResponse } from '@chopchop/shared';
 import { useAuth } from '../auth/AuthProvider';
 import type { KitchenScene } from './KitchenScene';
 import { abandonGame, finishGame, gameHistory, GameApiError, startGame } from './gameApi';
@@ -7,7 +7,7 @@ import { createService, type Service } from './service';
 
 export type ServicePhase = 'ready' | 'starting' | 'running' | 'paused' | 'countdown' | 'ended';
 
-export function useServiceSession() {
+export function useServiceSession(levelId: ServiceLevel = 1) {
   const { client } = useAuth();
   const scene = useRef<KitchenScene | null>(null);
   const current = useRef({ id: '', token: '', ended: false });
@@ -15,7 +15,7 @@ export function useServiceSession() {
   const mounted = useRef(true);
   const phaseRef = useRef<ServicePhase>('ready');
   const [phase, setPhaseState] = useState<ServicePhase>('ready');
-  const [service, setService] = useState(createService);
+  const [service, setService] = useState(() => createService(levelId));
   const [countdown, setCountdown] = useState(3);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -40,7 +40,7 @@ export function useServiceSession() {
     busy.current = true; setError(''); setPhase('starting');
     try {
       const accessToken = await token();
-      const game = await startGame(accessToken);
+      const game = await startGame(accessToken, levelId);
       if (!mounted.current) { void abandonGame(accessToken, game.gameId, true).catch(() => {}); return; }
       current.current.id = game.gameId;
       // The cuisine is loaded before POST /games. Active time starts only after its response.

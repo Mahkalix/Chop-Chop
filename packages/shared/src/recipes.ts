@@ -4,7 +4,7 @@
  * and are the prototype's proposals: change them here, and nowhere else.
  */
 
-export const ITEM_KINDS = ["tomato", "meat", "plate"] as const;
+export const ITEM_KINDS = ["tomato", "meat", "plate", "lettuce"] as const;
 export type ItemKind = (typeof ITEM_KINDS)[number];
 
 /** What goes on a plate: every item except the plate itself. */
@@ -14,6 +14,7 @@ export type IngredientKind = Exclude<ItemKind, "plate">;
 export const INGREDIENT_STATES = {
   tomato: ["raw", "chopped"],
   meat: ["raw", "cooked", "burnt"],
+  lettuce: ["ready"],
 } as const satisfies Record<IngredientKind, readonly string[]>;
 
 /** An ingredient in a given state, e.g. `{ kind: "meat", state: "cooked" }`. */
@@ -48,7 +49,7 @@ export function preparationFor(ingredient: Ingredient): Preparation | null {
   return PREPARATIONS.find((p) => p.ingredient === ingredient.kind && p.from === ingredient.state) ?? null;
 }
 
-export type RecipeId = "prepared-tomato" | "grilled-meat" | "mixed-plate";
+export type RecipeId = "prepared-tomato" | "grilled-meat" | "mixed-plate" | "tomato-salad" | "complete-plate";
 
 export interface Recipe {
   readonly id: RecipeId;
@@ -68,7 +69,17 @@ export const RECIPES: readonly Recipe[] = [
       { kind: "meat", state: "cooked" },
     ],
   },
+  { id: "tomato-salad", name: "Salade tomate", ingredients: [{ kind: "lettuce", state: "ready" }, { kind: "tomato", state: "chopped" }] },
+  { id: "complete-plate", name: "Assiette complète", ingredients: [
+    { kind: "lettuce", state: "ready" }, { kind: "tomato", state: "chopped" }, { kind: "meat", state: "cooked" },
+  ] },
 ];
+
+/** Cumulative catalogs, available from the first second. mixed-plate is legacy only. */
+export const RECIPES_BY_LEVEL = {
+  1: ["prepared-tomato", "grilled-meat"],
+  2: ["prepared-tomato", "grilled-meat", "tomato-salad", "complete-plate"],
+} as const satisfies Record<number, readonly RecipeId[]>;
 
 const keyOf = (ingredient: Ingredient) => `${ingredient.kind}:${ingredient.state}`;
 const sortedKeys = (list: readonly Ingredient[]) => list.map(keyOf).sort().join(",");
@@ -77,9 +88,16 @@ const sortedKeys = (list: readonly Ingredient[]) => list.map(keyOf).sort().join(
  * The recipe made by the content of a plate, or null. The order does not matter, but an extra
  * ingredient or an ingredient in the wrong state makes the plate invalid.
  */
-export function matchRecipe(contents: readonly Ingredient[]): RecipeId | null {
+export function matchRecipe(contents: readonly Ingredient[], allowed: readonly RecipeId[] = RECIPES.map(recipe => recipe.id)): RecipeId | null {
   const wanted = sortedKeys(contents);
-  return RECIPES.find((recipe) => sortedKeys(recipe.ingredients) === wanted)?.id ?? null;
+  return RECIPES.find((recipe) => allowed.includes(recipe.id) && sortedKeys(recipe.ingredients) === wanted)?.id ?? null;
+}
+
+/** Allow partial assembly in any order, but never extra, duplicate or unprepared ingredients. */
+export function canAssemble(contents: readonly Ingredient[], allowed: readonly RecipeId[]): boolean {
+  return RECIPES.some(recipe => allowed.includes(recipe.id) && contents.every((ingredient, index) =>
+    recipe.ingredients.some(wanted => keyOf(wanted) === keyOf(ingredient))
+    && contents.findIndex(other => keyOf(other) === keyOf(ingredient)) === index));
 }
 
 /** From `fromSecond` of the game on, only these recipes can be ordered. */
@@ -106,4 +124,5 @@ export interface RecipesResponse {
   preparations: readonly Preparation[];
   recipes: readonly Recipe[];
   phases: readonly Phase[];
+  levels: typeof RECIPES_BY_LEVEL;
 }

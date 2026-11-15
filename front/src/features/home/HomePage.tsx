@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { LEVEL_ONE_RULES } from '@chopchop/shared';
+import { getServiceRules, type ServiceLevel } from '@chopchop/shared';
+import { readSelectedLevel } from '../game/levelSelection';
 import s from './Selection.module.scss';
 
 const chefs = ['Miso','Pipa','Basile','Alba','Nori','Gaspard'];
 export function HomePage() {
+  const [level, setLevel] = useState(readSelectedLevel);
+  const rules = getServiceRules(level);
   const [chef, setChef] = useState(() => Math.max(0, chefs.indexOf(sessionStorage.getItem('chef') ?? '')));
   const [name, setName] = useState(() => sessionStorage.getItem('pseudo') ?? '');
   function select(index: number) {
@@ -13,9 +16,14 @@ export function HomePage() {
   return <main className={s.menu}>
     <h1><img src="/menu/logo.png" alt="CHOP CHOP" /></h1>
     <div className={s.columns}>
-      <section className={s.level}><h2>01 / PREMIER COUP DE FEU <time>03:00</time></h2>
+      <section className={s.level}>
+        <label htmlFor="service-level">CHOISIS TON NIVEAU </label>
+        <select id="service-level" value={level} onChange={event => {
+          const next = Number(event.target.value) as ServiceLevel; setLevel(next); sessionStorage.setItem('level', String(next));
+        }}><option value="1">1 · Tomate et viande</option><option value="2">2 · Salade et incendies</option></select>
+        <h2>0{level} / {level === 1 ? 'PREMIER COUP DE FEU' : 'CHAUD DEVANT'} <time>03:00</time></h2>
         <img className={s.map} src="/menu/kitchen.png" alt="Aperçu de la cuisine du premier service" />
-          <div className={s.stars}>{LEVEL_ONE_RULES.stars.map((score,i)=><div key={score}><span aria-label={`${i+1} étoiles`}>{Array.from({length:i+1},(_,j)=><img key={j} src="/menu/star.svg" alt="" />)}</span>{score.toLocaleString('fr-FR')} pts</div>)}</div>
+          <div className={s.stars}>{rules.stars.map((score,i)=><div key={score}><span aria-label={`${i+1} étoiles`}>{Array.from({length:i+1},(_,j)=><img key={j} src="/menu/star.svg" alt="" />)}</span>{score.toLocaleString('fr-FR')} pts</div>)}</div>
       </section>
       <section className={s.selection}>
         <label>Ton prénom ou pseudo<input placeholder="Ex. Alex" value={name} maxLength={16} onChange={e=>{setName(e.target.value);sessionStorage.setItem('pseudo',e.target.value);}} /></label>

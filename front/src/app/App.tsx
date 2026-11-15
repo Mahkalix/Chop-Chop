@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AuthProvider } from '../features/auth/AuthProvider';
 import { PlayerGate } from '../features/auth/PlayerGate';
 import { Ranking } from '../features/leaderboard/Ranking';
+import { readSelectedLevel } from '../features/game/levelSelection';
 import { HomePage } from '../features/home/HomePage';
 import styles from '../features/home/HomePage.module.scss';
 
@@ -58,10 +59,11 @@ const steps = [
 ];
 
 function Rules() {
+  const level = readSelectedLevel();
   return <>
     <p>TON BUT : servir les bonnes assiettes avant la fin des 3 minutes.</p>
     <div className={styles.row}>
-      {[['Z Q S D ou ↑ ← ↓ →', 'Se déplacer'], ['E', 'Prendre / poser', 'Appui simple'], ['C', 'Découper', 'Maintenir 3 secondes'], ['Esc', 'Pause']].map(([key, label, hint]) =>
+      {[['Z Q S D ou ↑ ← ↓ →', 'Se déplacer'], ['E', 'Prendre / poser', 'Appui simple'], ['C', level === 2 ? 'Découper / éteindre' : 'Découper', 'Maintenir 3 secondes'], ['Esc', 'Pause']].map(([key, label, hint]) =>
         <section key={key}>{key === 'Z Q S D ou ↑ ← ↓ →' ? <div className={styles.movement}>{['ZQSD', '↑←↓→'].map((layout, i) => <span key={layout}>{i === 1 && <b>ou</b>}<span className={styles.keys}>{Array.from(layout, letter => <kbd key={letter}>{letter}</kbd>)}</span></span>)}</div> : <kbd>{key}</kbd>}<h3>{label}</h3>{hint}</section>
       )}
     </div>
@@ -70,8 +72,11 @@ function Rules() {
       <section key={title}><h3>{title}</h3><p>{body}</p></section>
     )}</div>
     <div className={styles.row}>
-      <section><h3>LES 2 RECETTES DU NIVEAU 1</h3>Tomate préparée : assiette + tomate découpée<br/>Viande grillée : assiette + viande cuite</section>
-      <section><h3>À RETENIR</h3>Un seul objet porté à la fois. Pose-le avant d’en prendre un autre.<br/>Viande : pose-la sur le feu, attends 8 s, puis récupère-la.<br/>Après 6 s de plus, elle brûle : direction la poubelle.</section>
+      <section><h3>LES RECETTES DU NIVEAU {level}</h3>Tomate préparée : assiette + tomate découpée<br/>Viande grillée : assiette + viande cuite
+        {level === 2 && <><br/>Salade tomate : assiette + salade + tomate découpée<br/>Assiette complète : assiette + salade + tomate découpée + viande cuite<br/>La salade est prête à l’emploi. Pose une assiette sur un comptoir, puis ajoute les ingrédients un par un avec E, dans l’ordre de ton choix.</>}
+      </section>
+      <section><h3>À RETENIR</h3>Un seul objet porté à la fois. Pose-le avant d’en prendre un autre.<br/>Viande : pose-la sur le feu, attends 8 s, puis récupère-la.<br/>Après 6 s de plus, elle brûle : −10 points et combo remis à 1.
+        {level === 2 ? <> Le grill prend feu et devient inutilisable. Prends l’extincteur sur son support, approche-toi du grill et maintiens C pendant 3 s. Repose l’extincteur, puis prends la viande brûlée et jette-la à la poubelle. Le grill est de nouveau disponible. Aucun malus supplémentaire.</> : <> Jette la viande brûlée à la poubelle.</>}</section>
     </div>
   </>;
 }

@@ -51,3 +51,12 @@ it('refuses malformed result and history responses', async () => {
   await expect(finishGame('token', 'run-1', { score: 0, bestCombo: 0 })).rejects.toMatchObject({ status: 0 });
   await expect(gameHistory('token')).rejects.toMatchObject({ status: 0 });
 });
+
+it('starts level two explicitly and refuses a response for another level', async () => {
+  const fetchMock = vi.fn().mockResolvedValueOnce(response({ gameId: 'run-2', levelId: 2, startedAt: '2026-11-15T12:00:00Z' }))
+    .mockResolvedValueOnce(response({ gameId: 'wrong', levelId: 1, startedAt: '2026-11-15T12:00:00Z' }));
+  vi.stubGlobal('fetch', fetchMock);
+  expect((await startGame('token', 2)).levelId).toBe(2);
+  expect(JSON.parse(fetchMock.mock.calls[0]![1].body)).toEqual({ levelId: 2 });
+  await expect(startGame('token', 2)).rejects.toMatchObject({ status: 0 });
+});

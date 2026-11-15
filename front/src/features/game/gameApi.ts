@@ -1,4 +1,4 @@
-import type { FinishGameInput, FinishGameResponse, PlayerGamesResponse, StartGameResponse } from '@chopchop/shared';
+import type { ServiceLevel, FinishGameInput, FinishGameResponse, PlayerGamesResponse, StartGameResponse } from '@chopchop/shared';
 
 export class GameApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
@@ -27,9 +27,9 @@ export async function gameRequest<T>(token: string, path: string, body?: unknown
 const invalidResponse = () => new GameApiError(0, 'Le service a renvoyé une réponse invalide.');
 const nonNegative = (value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
 
-export async function startGame(token: string): Promise<StartGameResponse> {
-  const data = await gameRequest<StartGameResponse>(token, '/games', { levelId: 1 });
-  if (!data || typeof data.gameId !== 'string' || !data.gameId || data.levelId !== 1
+export async function startGame(token: string, levelId: ServiceLevel = 1): Promise<StartGameResponse> {
+  const data = await gameRequest<StartGameResponse>(token, '/games', { levelId });
+  if (!data || typeof data.gameId !== 'string' || !data.gameId || data.levelId !== levelId
     || typeof data.startedAt !== 'string' || !Number.isFinite(Date.parse(data.startedAt))) throw invalidResponse();
   return data;
 }

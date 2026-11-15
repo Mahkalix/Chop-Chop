@@ -7,14 +7,16 @@ import { ServiceHud } from './ServiceHud';
 import { ServiceOverlay } from './ServiceOverlay';
 import { useServiceSession } from './useServiceSession';
 import type { Service } from './service';
+import { readSelectedLevel } from './levelSelection';
 
 export default function Kitchen() {
   const mount = useRef<HTMLDivElement>(null);
-  const session = useServiceSession();
+  const [levelId] = useState(readSelectedLevel);
+  const session = useServiceSession(levelId);
   const actions = useRef(session);
   actions.current = session;
   const [ready, setReady] = useState(false);
-  const [status, setStatus] = useState<InteractionStatus>({ carried: null, target: null, message: 'Approche-toi d’un poste puis appuie sur E.', preparation: null });
+  const [status, setStatus] = useState<InteractionStatus>({ carried: null, target: null, message: 'Approche-toi d’un poste puis appuie sur E.', preparation: null, fireCount: 0 });
   useEffect(() => {
     let game: Phaser.Game | undefined;
     // The portal owns the full screen; underlying auth controls must not receive focus.
@@ -30,7 +32,7 @@ export default function Kitchen() {
         pixelArt: true,
         backgroundColor: '#e4d5bb',
         physics: { default: 'arcade', arcade: { debug: false } },
-        scene: KitchenScene,
+        scene: new KitchenScene(levelId),
       });
       game.events.on('kitchen-interaction', setStatus);
       game.events.on('kitchen-ready', (scene: KitchenScene) => { actions.current.scene.current = scene; setReady(true); });
@@ -43,8 +45,8 @@ export default function Kitchen() {
       game?.destroy(true);
       if (root) root.inert = wasInert;
     };
-  }, []);
-  return createPortal(<main className={styles.kitchen} aria-label="Cuisine du premier service">
+  }, [levelId]);
+  return createPortal(<main className={styles.kitchen} aria-label={`Cuisine du niveau ${levelId}`}>
     <div className={styles.canvas} ref={mount} style={{ visibility: session.phase === 'running' ? 'visible' : 'hidden' }} />
     {session.phase === 'running' && <ServiceHud service={session.service} onPause={session.pause} />}
     <ServiceOverlay session={session} ready={ready} />
@@ -54,6 +56,7 @@ export default function Kitchen() {
       else if (frame) void frame.requestFullscreen().catch(() => {});
     }}>PLEIN ÉCRAN</button>}
     <section className={styles.inventory} aria-label="Objet porté" hidden={session.phase !== 'running'}>
+      {status.fireCount > 0 && <p role="alert">FEU AU GRILL ! Prends l’extincteur et maintiens C près du feu pendant 3 s.</p>}
       <strong>EN MAIN : {status.carried ?? 'Rien'}</strong>
       <p>{status.target ? `POSTE : ${status.target}` : 'Approche-toi d’un poste.'}</p>
       <p role="status">{status.message}</p>
@@ -64,6 +67,6 @@ export default function Kitchen() {
         </div>
       </div>}
     </section>
-    <p className={styles.hint}>ZQSD ou flèches : BOUGER · ESPACE : BONDIR · E : PRENDRE / POSER · Maintenir C : DÉCOUPER</p>
+    <p className={styles.hint}>ZQSD ou flèches : BOUGER · ESPACE : BONDIR · E : PRENDRE / POSER · C maintenue : DÉCOUPER{levelId === 2 ? ' / ÉTEINDRE' : ''}</p>
   </main>, document.body);
 }
