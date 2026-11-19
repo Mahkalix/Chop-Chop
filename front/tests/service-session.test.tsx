@@ -67,6 +67,23 @@ it('pauses when hidden and resumes only after three seconds, interrupted by anot
   expect(scene.setPaused).toHaveBeenLastCalledWith(false);
 });
 
+it('pauses on Escape and keeps the browser from closing the pause dialog with the same key', async () => {
+  vi.useFakeTimers();
+  const { result } = setup();
+  await act(async () => { await result.current.start(); });
+  act(() => vi.advanceTimersByTime(1000));
+  const escape = () => {
+    const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+    act(() => { window.dispatchEvent(event); });
+    return event;
+  };
+  // A modal dialog opened during this keydown would otherwise receive it as a close request.
+  expect(escape().defaultPrevented).toBe(true);
+  expect(result.current.phase).toBe('paused');
+  expect(escape().defaultPrevented).toBe(true);
+  expect(result.current.phase).toBe('paused');
+});
+
 it('does not consume time if the start response arrives while hidden', async () => {
   Object.defineProperty(document, 'hidden', { configurable: true, value: true });
   const { result, scene } = setup();
