@@ -8,6 +8,8 @@ import { createInventory, interact, describeItem, type Item, type Inventory } fr
 import { advancePreparation, getPreparationProgress, type PreparationProgress } from './preparation';
 import { advanceService, createService, deliver, penalizeBurns, type Service } from './service';
 import { getServiceRules, EXTINGUISH_MS, type ServiceLevel } from '@chopchop/shared';
+import { KitchenAudio, preloadSounds } from './kitchenAudio';
+import { activeLoops, readSoundSettings, soundEffects, type SoundSettings, type SoundState } from './sound';
 
 const textureOf = (item: Item) => item.kind === 'plate'
   ? (item.contents.length === 5 ? 'item-wrap' : item.contents.length ? `dish-${item.contents.map(value => value.kind).sort().join('-')}` : 'dish-empty')
@@ -32,9 +34,13 @@ export class KitchenScene extends Phaser.Scene {
   private running = false;
   private lastServiceAt = 0;
 
+  private audio!: KitchenAudio;
+  private soundState!: SoundState;
+
   startService() {
     this.running = true;
     this.input.keyboard?.enableGlobalCapture();
+    this.audio.startMusic();
     this.game.events.emit('service-update', this.service);
   }
 
@@ -45,6 +51,12 @@ export class KitchenScene extends Phaser.Scene {
     this.input.keyboard?.resetKeys();
     if (this.running) this.input.keyboard?.enableGlobalCapture();
     else this.input.keyboard?.disableGlobalCapture();
+    if (this.running) this.audio.resume();
+    else this.audio.pause();
+  }
+
+  setSoundSettings(settings: SoundSettings) {
+    this.audio.setSettings(settings);
   }
   private inventory: Inventory;
   private interactionKey!: Phaser.Input.Keyboard.Key;
@@ -84,6 +96,7 @@ export class KitchenScene extends Phaser.Scene {
     this.load.svg('knife', '/kitchen/items/knife.svg');
     const selected = sessionStorage.getItem('chef') ?? 'Miso';
     this.load.image('chef', `/menu/${chefs.includes(selected) ? selected : 'Miso'}.png`);
+    preloadSounds(this.load);
   }
 
   create() {
@@ -101,6 +114,8 @@ export class KitchenScene extends Phaser.Scene {
       texture.saveTexture(kinds.length ? 'dish-' + [...kinds].sort().join('-') : 'dish-empty');
     }
     this.inventory = createInventory(this.levelId);
+    this.audio = new KitchenAudio(this.sound, this.cache.audio, readSoundSettings());
+    this.soundState = { service: this.service, inventory: this.inventory };
     this.lastStatus = '';
     this.lastProgressAt = 0;
     this.dashUntil = 0;
@@ -175,6 +190,7 @@ export class KitchenScene extends Phaser.Scene {
     if (activeDelta >= getServiceRules(this.levelId).durationMs - this.service.elapsedMs) {
       this.service = advanceService(this.service, activeDelta);
       this.running = false;
+      this.audio.stop();
       this.input.keyboard?.disableGlobalCapture();
       this.player.setVelocity(0);
       this.game.events.emit('service-update', this.service);
@@ -207,6 +223,7 @@ export class KitchenScene extends Phaser.Scene {
       this.publishStatus(target, '');
     }
     this.updatePreparation(target, time, activeDelta);
+    this.updateSounds();
     if (time - this.lastServiceAt >= 100) {
       this.lastServiceAt = time;
       this.game.events.emit('service-update', this.service);
@@ -240,6 +257,14 @@ export class KitchenScene extends Phaser.Scene {
       this.lastProgressAt = time;
       this.publishStatus(target);
     }
+  }
+
+  /** Deliveries happen in the key handler, so changes are compared frame to frame. */
+  private updateSounds() {
+    const current = { service: this.service, inventory: this.inventory };
+    this.audio.play(soundEffects(this.soundState, current));
+    this.audio.syncLoops(activeLoops(this.soundState, current, this.stations));
+    this.soundState = current;
   }
 
   private drawProgress() {

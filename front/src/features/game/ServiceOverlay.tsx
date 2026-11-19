@@ -1,4 +1,5 @@
 import { ServiceIntro } from './ServiceIntro';
+import { SoundSettingsControls } from './SoundSettingsControls';
 import { isLocalDemo } from './localDemo';
 import { useEffect, useRef } from 'react';
 import { getServiceRules, RECIPES } from '@chopchop/shared';
@@ -32,6 +33,7 @@ export function ServiceOverlay({ session, ready, loadingProgress = 0, showRecipe
         return <li key={id}><DishArt recipeId={id} /><div><strong>{recipe.name}</strong><p>Assiette + {recipe.ingredients.map(ingredient => ingredientNames[ingredient.kind].toLowerCase()).join(' + ')}</p></div></li>;
       })}</ul>}
       <p>Le service est en pause. Prends ton temps.</p>
+      <SoundSettingsControls onChange={settings => session.scene.current?.setSoundSettings(settings)} />
       <details className={styles.pauseHelp}><summary>COMMANDES ET RÈGLES</summary>
       {service.levelId >= 2 && <p>Le feu et l’extinction sont également arrêtés. Pour éteindre : porter l’extincteur et maintenir C près du poste en feu (3 s).</p>}
       <p><kbd>ZQSD / flèches</kbd> Déplacer · <kbd>Espace</kbd> Bondir<br /><kbd>E</kbd> Prendre / poser / servir · <kbd>C maintenue</kbd> Découper (3 s, mains libres)</p>

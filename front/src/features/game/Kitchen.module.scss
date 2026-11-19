@@ -86,6 +86,9 @@
 .dialogActions { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
 .dialogActions button { margin: 0; flex: 1 1 auto; font-size: 13px; }
 .dialog .secondaryButton { background: transparent; color: #000; }
+.soundSettings { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+.dialog .soundToggle { margin: 0; flex: 1 1 180px; min-height: 44px; font-size: 13px; background: transparent; color: #000; }
+.dialog .soundToggle[aria-checked='false'] { background: #000; color: var(--paper); }
 .pauseHelp { margin-top: 20px; }
 .pauseHelp summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; gap: 10px; }
 .pauseHelp summary::before { content: '+'; }
