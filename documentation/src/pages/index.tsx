@@ -11,7 +11,7 @@ const cards = [
   {title: 'Se classer', text: 'Comparer son score à celui des autres joueurs du même niveau.', to: '/docs/classement', label: 'Découvrir le classement'},
 ];
 export default function Home(): ReactNode {
-  return <Layout title="Documentation du jeu web" description="CHOP-CHOP : jeu de cuisine solo en 2D, équipe, gameplay, trois niveaux prévus et classement par niveau.">
+  return <Layout title="Documentation du jeu web" description="CHOP-CHOP : jeu de cuisine solo en 2D, équipe, gameplay, trois niveaux jouables et classement par niveau.">
     <header className={styles.hero}>
       <div className={`container ${styles.heroInner}`}>
         <div>
@@ -26,7 +26,7 @@ export default function Home(): ReactNode {
           <Link className="button button--outline button--primary button--lg" to="/docs/regles-du-jeu">Règles du jeu</Link>
           <Link className="button button--outline button--primary button--lg" to="/docs/cas-utilisation">Les 54 cas d’utilisation</Link>
         </div>
-        <p className={styles.meta}>Solo · Ordinateur · Clavier · 3 niveaux prévus</p>
+        <p className={styles.meta}>Solo · Ordinateur · Clavier · 3 niveaux jouables</p>
         </div>
         <aside className={styles.overview} aria-labelledby="overview-title">
           <Heading as="h2" id="overview-title" className={styles.overviewTitle}>Le projet en un coup d’œil</Heading>
@@ -50,8 +50,8 @@ export default function Home(): ReactNode {
         </article>)}</div>
       </section>
       <section className={styles.note}>
-        <Heading as="h2">Un cadrage à valider ensemble</Heading>
-        <p>Le projet prévoit trois niveaux, Supabase Auth et une API Fastify déjà présente dans le code. React porte les menus et interfaces ; Phaser porte la cuisine et les interactions. La durée définitive, les recettes et les barèmes restent à valider.</p>
+        <Heading as="h2">Une intégration à vérifier ensemble</Heading>
+        <p>Le code intègre trois niveaux de 180 secondes actives, Supabase Auth et une API Fastify. React porte les menus et interfaces ; Phaser porte la cuisine et les interactions. Les recettes, commandes et barèmes sont implémentés ; le parcours sur les services déployés reste à vérifier.</p>
         <Link to="/docs/validation">Consulter les décisions et les critères du prototype →</Link>
       </section>
     </main>

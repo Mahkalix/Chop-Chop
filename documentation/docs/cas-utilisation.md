@@ -4,7 +4,7 @@ title: Cas d’utilisation
 
 # Les 54 cas d’utilisation
 
-Le joueur intervient dans neuf domaines. Le serveur soutient les comptes, les résultats et le classement. Les associations du PDF ne décrivent pas un ordre chronologique ; certains cas représentent des réactions automatiques. Les règles proposées restent à valider.
+Le joueur intervient dans neuf domaines. Le serveur soutient les comptes, les résultats et le classement. Les associations du PDF ne décrivent pas un ordre chronologique ; certains cas représentent des réactions automatiques. Les identifiants ci-dessous sont conservés depuis le cadrage initial ; les précisions décrivent le code actuel. UC01 et UC02 correspondent à une session anonyme Supabase et au choix du pseudo, sans email ni mot de passe.
 
 ## Accès au jeu et navigation
 
@@ -55,7 +55,7 @@ Un seul objet porté ; une assiette garnie compte comme un objet.
 | UC22 | Récupérer une viande cuite |
 | UC23 | Laisser brûler une viande |
 
-UC19 et UC23 : résultats automatiques. Cuisson autonome et reprise de découpe proposées.
+UC19 et UC23 : résultats automatiques. La cuisson est autonome sur le grill ; la découpe de tomate ou salade dure 3 secondes avec C et conserve sa progression interrompue. La viande cuit en 8 secondes puis brûle après 6 secondes supplémentaires ; aux niveaux 2 et 3, le feu bloque le grill jusqu’à extinction avec C pendant 3 secondes.
 
 ## Assiettes et recettes
 
@@ -68,7 +68,7 @@ UC19 et UC23 : résultats automatiques. Cuisson autonome et reprise de découpe 
 | UC28 | Refuser un ajout incompatible |
 | UC29 | Transporter un plat |
 
-UC28 : réaction automatique. Recettes proposées : tomate, viande, assiette mixte.
+UC28 : réaction automatique. Recettes jouables : tomate préparée et viande grillée au niveau 1 ; ajout de salade tomate et assiette complète au niveau 2 ; ajout du wrap au niveau 3. Les catalogues sont cumulatifs. Un ajout incompatible ou en doublon est refusé sans perdre l’objet porté.
 
 ## Commandes clients et livraison
 
@@ -94,7 +94,7 @@ UC31 et UC35 : événements temporisés. Une livraison refusée conserve l’ass
 | UC40 | Suivre sa performance |
 | UC41 | Passer à une difficulté supérieure |
 
-Calculs et changements de phase automatiques ; barème et rythme proposés à valider.
+Calculs automatiques ; les recettes sont disponibles dès le début du niveau choisi et les délais des nouvelles commandes diminuent chaque minute. Le combo va de ×1 à ×3 ; expiration et refus remettent le multiplicateur à ×1 sans retrait de points. Une brûlure retire 10 points et remet le multiplicateur à ×1. Voir le [barème et les paramètres par niveau](./score.md).
 
 ## Fin de partie et enregistrement
 
@@ -123,6 +123,6 @@ Le titre de cette section reprend les diagrammes initiaux. L’équipe a retenu 
 | UC53 | Gérer un classement indisponible |
 | UC54 | Maintenir des scores comparables |
 
-UC52 et UC54 : règles du service. Départage et versionnement des classements proposés.
+UC52 et UC54 : règles implémentées du service. Départage par score décroissant, date de fin la plus ancienne puis identifiant de partie ; classement séparé par version des règles. Le front affiche un top 5 sans pagination ; UC51 reste limité au rang reçu en fin de partie, sans route pour retrouver une position actualisée hors top.
 
 Source : [diagrammes originaux](./references.md).

@@ -2,24 +2,26 @@
 title: Cuisine et gameplay
 ---
 
-:::info Document de cadrage
-Contenu issu du cahier des charges du 2 octobre 2026. Les propositions restent à valider ; les comportements attendus ne constituent pas une preuve d’implémentation. Voir les [sources](./references.md).
+:::info Règles implémentées
+Cette page décrit le code actuel des trois niveaux. Le cadrage historique reste accessible dans les [sources](./references.md).
 :::
 
-**À valider :** recettes, touches, réserves illimitées, cuisson autonome, conservation de la progression de découpe, durées, génération des commandes, refus de livraison et barème.
+Les recettes et durées viennent de `packages/shared/src/recipes.ts` et `service.ts` ; les interactions, préparations et incendies sont gérés dans `front/src/features/game/`.
 
 ## Cuisine et postes de travail
 
-Les murs, meubles et postes bloquent le déplacement. Le joueur interagit avec le poste proche situé devant lui. Les collisions simples font partie du périmètre ; leur comportement sera vérifié dans le prototype.
+Les limites de la cuisine et les meubles bloquent le déplacement. Le joueur interagit avec le poste le plus proche à portée ; il n’est pas nécessaire de lui faire face.
 
 
 | Élément | Fonction et règle |
 | --- | --- |
-| Caisses d’ingrédients | Récupérer une tomate ou une viande brute avec les mains libres. Réserve illimitée proposée. |
+| Caisses d’ingrédients | Récupérer un ingrédient avec les mains libres : tomate et viande dès le niveau 1, salade au niveau 2, galette et sauce blanche au niveau 3. Réserves illimitées. |
 | Plan de travail | Déposer et reprendre un objet. Un emplacement contient un seul objet. |
-| Planche à découper | Déposer une tomate brute ; découper en restant devant le poste ; afficher une barre de progression. |
-| Poste de cuisson | Déposer une viande crue ; elle devient cuite puis brûlée si elle reste trop longtemps. Cuisson autonome proposée. |
-| Zone d’assiettes | Prendre une assiette vide avec les mains libres. Réserve illimitée proposée. |
+| Planche à découper | Déposer une tomate ou une salade brute ; maintenir C à proximité, mains libres, pendant 3 secondes actives. Barre de progression. |
+| Poste de cuisson | Déposer une viande ; cuisson autonome en 8 secondes, puis brûlure après 6 secondes supplémentaires sur le grill. |
+| Zone d’assiettes | Prendre une assiette vide avec les mains libres. Réserve illimitée. |
+| Postes ASSEMBLER | Deux emplacements pour poser une assiette et ajouter les ingrédients prêts avec E ; les plans de travail permettent aussi l’assemblage. |
+| Extincteur | Disponible aux niveaux 2 et 3 ; le porter et maintenir C près du grill en feu pendant 3 secondes. Réutilisable et impossible à jeter. |
 | Zone de livraison | Servir une assiette ; vérifier automatiquement la recette et la commande correspondante. |
 | Poubelle | Supprimer l’objet porté. Pour une assiette garnie, supprimer son contenu et l’assiette dans cette version simplifiée. |
 
@@ -30,7 +32,10 @@ Les murs, meubles et postes bloquent le déplacement. Le joueur interagit avec l
 | Ingrédient | États | Transformation et utilisation |
 | --- | --- | --- |
 | Tomate | Brute → découpée | La découpe est obligatoire avant l’assemblage d’une recette. |
-| Viande | Crue → cuite → brûlée | Seule la viande cuite est utilisable dans les recettes proposées. L’état brûlé est irréversible. |
+| Viande | Crue → cuite → brûlée | Seule la viande cuite est utilisable dans les recettes. L’état brûlé est irréversible. |
+| Salade | Brute → découpée | Introduite au niveau 2 ; découpe obligatoire en 3 secondes. |
+| Galette | Prête | Introduite au niveau 3 ; aucune cuisson. |
+| Sauce blanche | Prête | Introduite au niveau 3 ; aucune préparation. |
 
 
 Chaque ingrédient conserve son état lorsqu’il est porté ou posé.
@@ -41,17 +46,21 @@ Une assiette est un contenant : vide, en préparation ou conforme à une recette
 
 Les objets déjà présents ne sont pas remplacés automatiquement sur un poste occupé.
 
-## Recettes proposées à valider
+## Recettes par niveau
 
 
 | Recette | Composition exacte dans une assiette |
 | --- | --- |
 | Tomate préparée | 1 tomate découpée |
 | Viande grillée | 1 viande cuite |
-| Assiette mixte | 1 tomate découpée + 1 viande cuite |
+| Salade tomate (niveau 2) | 1 salade découpée + 1 tomate découpée |
+| Assiette complète (niveau 2) | 1 salade découpée + 1 tomate découpée + 1 viande cuite |
+| Wrap (niveau 3) | 1 galette + 1 salade découpée + 1 tomate découpée + 1 viande cuite + 1 sauce blanche |
 
 
-Ces trois recettes limitent les ingrédients à ceux déjà cités. Aucun pain, salade ou autre ingrédient n’est ajouté au périmètre. L’ordre d’assemblage est libre ; les ingrédients supplémentaires ou dans un mauvais état rendent le plat invalide.
+Le niveau 1 propose la tomate préparée et la viande grillée pour apprendre découpe, cuisson et service. Le niveau 2 conserve ces recettes et ajoute salade tomate, assiette complète et feu. Le niveau 3 conserve les précédentes et ajoute le wrap, la galette et la sauce blanche. Toutes les recettes du niveau sont disponibles dès le début du service. L’assiette mixte reste exportée pour compatibilité dans le paquet partagé, mais ne fait partie d’aucun catalogue jouable.
+
+L’ordre d’assemblage est libre et une assiette partielle peut être déplacée. Les doublons, ingrédients supplémentaires ou dans un mauvais état sont refusés sans perdre l’objet porté.
 
 ## Actions du personnage
 
@@ -61,7 +70,7 @@ Prendre un ingrédient, une assiette ou un objet posé, avec les mains libres.
 
 Poser l’objet porté sur un poste compatible et libre.
 
-Découper une tomate sur une planche en maintenant une touche et en restant devant.
+Découper une tomate ou une salade sur une planche en maintenant C à proximité, mains libres.
 
 Lancer une cuisson en déposant la viande, puis récupérer la viande cuite avant qu’elle brûle.
 
@@ -71,23 +80,27 @@ Transporter une assiette garnie jusqu’à la livraison.
 
 Jeter un objet ou une assiette inutilisable à la poubelle.
 
-Découpe : quitter le poste ou relâcher la touche suspend la progression ; la progression acquise est conservée, selon la règle proposée. Le joueur doit revenir devant le poste pour terminer.
+Découpe : quitter le poste ou relâcher la touche suspend la progression ; la progression acquise est conservée sur l’ingrédient. Le joueur doit revenir à proximité du poste pour terminer.
 
-Cuisson : le joueur peut s’éloigner une fois la viande déposée, selon la proposition retenue pour le cadrage. La cuisson continue et une alerte visuelle signale la viande prête puis le risque de brûlure.
+Cuisson : le joueur peut s’éloigner une fois la viande déposée. La cuisson continue sur le grill et une barre signale la viande prête puis le risque de brûlure ; hors du grill, la progression est suspendue.
 
-## Touches proposées
+Aux niveaux 2 et 3, la brûlure à 14 secondes déclenche un feu limité au grill, qui bloque ses interactions. L’extinction conserve sa progression si C est relâchée ou si le joueur s’éloigne. Après extinction, reposer l’extincteur puis jeter la viande brûlée. Aucun feu au niveau 1, aucune propagation ni pénalité supplémentaire liée au feu.
+
+## Touches
 
 
 | Touche | Action |
 | --- | --- |
 | Flèches ou Z Q S D | Déplacer le personnage |
 | E | Prendre, poser, assembler ou livrer selon le poste ciblé |
-| E maintenue | Découper si les mains sont libres devant une planche contenant une tomate brute |
+| C maintenue | Découper une tomate ou une salade, mains libres ; éteindre un feu en portant l’extincteur |
+| Espace | Bondir dans la direction du déplacement ou du dernier déplacement |
+| Échap | Mettre en pause |
 
 
-L’action dépend du poste et de l’objet porté ; un repère visuel identifie le poste ciblé.
+L’action dépend du poste à portée et de l’objet porté ; aucun cadre ne surligne le poste ciblé.
 
-Une action impossible laisse l’état du jeu inchangé et affiche un bref retour visuel.
+Un ajout ou dépôt impossible conserve les objets et affiche un message. Une livraison refusée conserve l’assiette mais remet le multiplicateur à ×1.
 
 Une assiette posée reçoit uniquement des ingrédients prêts compatibles avec les recettes.
 

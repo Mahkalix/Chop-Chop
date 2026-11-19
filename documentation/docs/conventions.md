@@ -68,7 +68,7 @@ Le fichier `apps/api/.env` n’est jamais commité. Il est préparé à partir d
 
 ## Priorités de réalisation
 
-Le projet est prévu sur deux jours. La priorité est une boucle jouable de bout en bout sur le niveau 1, avant les niveaux 2 et 3. React porte les menus et interfaces ; Phaser porte la cuisine et les interactions dans le front TypeScript/Vite. Les noms des niveaux et certaines limites de score restent provisoires.
+Le projet a été cadré sur deux jours, avec priorité initiale à une boucle jouable sur le niveau 1. Les trois niveaux sont désormais implémentés ; leur parcours sur les services déployés reste à vérifier. React porte les menus et interfaces ; Phaser porte la cuisine et les interactions dans le front TypeScript/Vite. Les plafonds serveur sont confirmés dans `packages/shared/src/levels.ts` ; les seuils d’étoiles restent des estimations dans `service.ts`.
 
 ## Compléments de coordination proposés
 
