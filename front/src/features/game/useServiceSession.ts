@@ -120,7 +120,12 @@ export function useServiceSession(levelId: ServiceLevel = 1) {
 
   useEffect(() => {
     mounted.current = true;
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') pause(); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      // The pause dialog opens during this keydown; its default action would close it at once.
+      event.preventDefault();
+      pause();
+    };
     const onVisibility = () => { if (document.hidden) pause(); };
     const abandon = () => {
       const game = current.current;
